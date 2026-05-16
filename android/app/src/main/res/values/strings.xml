@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Historia USaP</string>
+    <string name="title_activity_main">Historia USaP</string>
+    <string name="package_name">eus.historia.usap.trainer</string>
+    <string name="custom_url_scheme">eus.historia.usap.trainer</string>
+</resources>
