@@ -479,6 +479,7 @@ export default function Home() {
           <ExerciseText
             exercise={akats}
             selected={new Set(selectedPieces.map((piece) => piece.id))}
+            answers={answers}
             onToggle={(piece) =>
               setSelectedPieces((prev) =>
                 prev.some((item) => item.id === piece.id)
@@ -488,6 +489,7 @@ export default function Home() {
                     : prev
               )
             }
+            onAnswerChange={(id, val) => setAnswers((prev) => ({ ...prev, [id]: val }))}
           />
           <aside className="glass-panel rounded-3xl p-6 flex flex-col">
             <div className="flex items-center justify-between gap-3">
@@ -511,21 +513,37 @@ export default function Home() {
               </p>
             </div>
             <div className="mt-6 space-y-3 flex-1 overflow-auto no-scrollbar pr-1">
-              {selectedPieces.map((piece, index) => {
-                return (
-                  <label key={piece.id} className="block rounded-2xl border border-white/60 bg-white/40 p-4 shadow-sm backdrop-blur-md transition-all focus-within:ring-2 focus-within:ring-teal-500/30">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {index + 1}. {piece.label}
-                    </span>
-                    <input
-                      className="mt-2 w-full rounded-xl border border-white/80 bg-white/60 px-4 py-3 font-medium outline-none transition-colors focus:bg-white focus:shadow-sm"
-                      value={answers[piece.trapId ?? piece.id] ?? ''}
-                      onChange={(event) => setAnswers((prev) => ({ ...prev, [piece.trapId ?? piece.id]: event.target.value }))}
-                      placeholder="Zuzen idatzi..."
-                    />
-                  </label>
-                );
-              })}
+              {selectedPieces.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white/45 p-5 text-sm leading-relaxed text-slate-600">
+                  Lehenik testuan klikatu susmagarriak iruditzen zaizkizun 5 hitz edo esaldi. Zuzenketa laukitxoa testuan bertan agertuko da.
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {selectedPieces.map((piece, index) => (
+                    <li key={piece.id} className="rounded-xl border border-white/60 bg-white/40 p-3 shadow-sm backdrop-blur-md flex items-center justify-between">
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          {index + 1}. Hautaketa
+                        </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-slate-800 line-through truncate max-w-[120px] sm:max-w-[150px]">{piece.label}</span>
+                          <span className="text-slate-400">→</span>
+                          <span className="font-medium text-emerald-700 truncate max-w-[120px] sm:max-w-[150px]">
+                            {answers[piece.trapId ?? piece.id] || '(hutsik)'}
+                          </span>
+                        </div>
+                      </div>
+                      <button 
+                        className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-rose-500 transition-colors shrink-0"
+                        onClick={() => setSelectedPieces((prev) => prev.filter((item) => item.id !== piece.id))}
+                        title="Kendu"
+                      >
+                        <RotateCcw size={16} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <button
               className="mt-6 w-full rounded-xl bg-teal-600 px-5 py-4 font-black text-white shadow-md shadow-teal-900/20 transition-all hover:bg-teal-500 hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none disabled:text-slate-500"
@@ -665,6 +683,7 @@ export default function Home() {
             <ExerciseText
               exercise={akats}
               selected={new Set(selectedPieces.map((piece) => piece.id))}
+              answers={answers}
               onToggle={(piece) =>
                 setSelectedPieces((prev) =>
                   prev.some((item) => item.id === piece.id)
@@ -674,6 +693,7 @@ export default function Home() {
                       : prev
                 )
               }
+              onAnswerChange={(id, val) => setAnswers((prev) => ({ ...prev, [id]: val }))}
             />
             <aside className="glass-panel rounded-3xl p-6">
               <div className="flex items-start justify-between gap-4">
@@ -695,24 +715,37 @@ export default function Home() {
                 <div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${(selectedPieces.length / 5) * 100}%` }} />
               </div>
               <div className="mt-5 space-y-3">
-                {selectedPieces.length === 0 && (
+                {selectedPieces.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-white/45 p-5 text-sm leading-relaxed text-slate-600">
-                    Lehenik testuan klikatu susmagarriak iruditzen zaizkizun 5 hitz edo esaldi. Ondoren hemen agertuko dira zuzentzeko.
+                    Lehenik testuan klikatu susmagarriak iruditzen zaizkizun 5 hitz edo esaldi. Zuzenketa laukitxoa testuan bertan agertuko da.
                   </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {selectedPieces.map((piece, index) => (
+                      <li key={piece.id} className="rounded-xl border border-white/60 bg-white/40 p-3 shadow-sm flex items-center justify-between">
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                            {index + 1}. Hautaketa
+                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-slate-800 line-through truncate max-w-[120px] sm:max-w-[150px]">{piece.label}</span>
+                            <span className="text-slate-400">→</span>
+                            <span className="font-medium text-emerald-700 truncate max-w-[120px] sm:max-w-[150px]">
+                              {answers[piece.trapId ?? piece.id] || '(hutsik)'}
+                            </span>
+                          </div>
+                        </div>
+                        <button 
+                          className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-rose-500 transition-colors shrink-0"
+                          onClick={() => setSelectedPieces((prev) => prev.filter((item) => item.id !== piece.id))}
+                          title="Kendu"
+                        >
+                          <RotateCcw size={16} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-                {selectedPieces.map((piece, index) => (
-                  <label key={piece.id} className="block rounded-2xl border border-white/60 bg-white/40 p-4 shadow-sm">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                      {index + 1}. {piece.label}
-                    </span>
-                    <input
-                      className="mt-2 w-full rounded-xl border border-white/80 bg-white/70 px-4 py-3 font-medium outline-none focus:bg-white focus:ring-4 focus:ring-teal-500/20"
-                      value={answers[piece.trapId ?? piece.id] ?? ''}
-                      onChange={(event) => setAnswers((prev) => ({ ...prev, [piece.trapId ?? piece.id]: event.target.value }))}
-                      placeholder="Zuzen idatzi..."
-                    />
-                  </label>
-                ))}
               </div>
               {akatsResult && <AkatsResultView result={akatsResult} selectedPieces={selectedPieces} />}
             </aside>
@@ -1072,13 +1105,17 @@ function renderMarkedText(body: string, marks: ReturnType<typeof studyMarks>) {
 function ExerciseText({
   exercise,
   selected,
-  onToggle
+  answers,
+  onToggle,
+  onAnswerChange
 }: {
   exercise: AkatsExercise;
   selected: Set<string>;
+  answers?: Record<string, string>;
   onToggle: (piece: Selection) => void;
+  onAnswerChange?: (id: string, val: string) => void;
 }) {
-  const nodes = renderExercisePieces(exercise, selected, onToggle);
+  const nodes = renderExercisePieces(exercise, selected, answers, onToggle, onAnswerChange);
   return (
     <article className="glass-panel rounded-3xl p-8">
       <div className="mb-6 flex flex-wrap gap-3">
@@ -1092,7 +1129,7 @@ function ExerciseText({
   );
 }
 
-function renderExercisePieces(exercise: AkatsExercise, selected: Set<string>, onToggle: (piece: Selection) => void): ReactNode[] {
+function renderExercisePieces(exercise: AkatsExercise, selected: Set<string>, answers: Record<string, string> | undefined, onToggle: (piece: Selection) => void, onAnswerChange: ((id: string, val: string) => void) | undefined): ReactNode[] {
   const nodes: ReactNode[] = [];
   const traps = [...exercise.traps].sort((a, b) => a.start - b.start);
   let cursor = 0;
@@ -1108,6 +1145,8 @@ function renderExercisePieces(exercise: AkatsExercise, selected: Set<string>, on
           key={`trap:${trap.id}`}
           piece={{ id: trap.id, trapId: trap.id, label: value }}
           selected={selected.has(trap.id)}
+          answer={answers?.[trap.id]}
+          onAnswerChange={onAnswerChange ? (val) => onAnswerChange(trap.id, val) : undefined}
           onToggle={onToggle}
         >
           {value}
@@ -1138,6 +1177,8 @@ function renderExercisePieces(exercise: AkatsExercise, selected: Set<string>, on
             key={`decoy:${key}:${wordStart}`}
             piece={piece}
             selected={selected.has(piece.id)}
+            answer={answers?.[piece.id]}
+            onAnswerChange={onAnswerChange ? (val) => onAnswerChange(piece.id, val) : undefined}
             onToggle={onToggle}
           >
             {value}
@@ -1155,22 +1196,52 @@ function renderExercisePieces(exercise: AkatsExercise, selected: Set<string>, on
 function SelectablePiece({
   piece,
   selected,
+  answer,
   onToggle,
+  onAnswerChange,
   children
 }: {
   piece: Selection;
   selected: boolean;
+  answer?: string;
   onToggle: (piece: Selection) => void;
+  onAnswerChange?: (val: string) => void;
   children: ReactNode;
 }) {
+  if (selected) {
+    return (
+      <span className="relative inline-flex items-center mx-1 my-1 align-middle z-10">
+        <button 
+          className="rounded-l-lg bg-rose-600 px-3 py-1 font-black text-white shadow-lg hover:bg-rose-500 transition-colors line-through"
+          onClick={() => onToggle(piece)}
+          title="Kendu"
+        >
+          {children}
+        </button>
+        <input 
+          autoFocus
+          className="w-24 sm:w-32 rounded-r-lg border-2 border-l-0 border-rose-600 bg-white px-3 py-1 text-base font-bold text-slate-900 outline-none focus:w-32 sm:focus:w-48 transition-all focus:ring-0 shadow-lg"
+          placeholder="Zuzen..."
+          value={answer ?? ''}
+          onChange={(e) => onAnswerChange?.(e.target.value)}
+        />
+        <button 
+          className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white shadow-md hover:bg-slate-700 hover:scale-110 transition-transform" 
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(piece);
+          }}
+          title="Descartar"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </span>
+    );
+  }
+
   return (
     <button
-      className={clsx(
-        'rounded-md px-1 py-0.5 mx-0.5 text-left transition-all duration-300 focus:outline-none',
-        selected 
-          ? 'bg-emerald-700 font-black text-white shadow-lg shadow-emerald-900/30 scale-105 transform -translate-y-0.5' 
-          : 'hover:bg-amber-200/80 focus:bg-amber-200 hover:shadow-sm hover:scale-[1.02] active:scale-95'
-      )}
+      className="rounded-md px-1 py-0.5 mx-0.5 text-left transition-all duration-300 focus:outline-none hover:bg-amber-200/80 hover:shadow-sm hover:scale-[1.02] active:scale-95"
       onClick={() => onToggle(piece)}
     >
       {children}
