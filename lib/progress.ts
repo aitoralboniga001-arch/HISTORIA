@@ -1,10 +1,12 @@
 'use client';
 
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AttemptType, ProgressItem } from './types';
 
-export type LocalProfile = {
+export type Profile = {
   id: string;
   username: string;
+  isLocal: boolean;
 };
 
 export type LocalAttempt = {
@@ -20,28 +22,64 @@ type BackupPayload = {
   app: 'historia-usap-trainer';
   version: 2;
   exportedAt: string;
-  profile: LocalProfile;
+  profile: Profile;
   progress: Record<string, ProgressItem>;
   attempts: LocalAttempt[];
 };
 
-const PROFILE_KEY = 'historia-usap:local-profile:v2';
+const LAST_USERNAME_KEY = 'historia-usap:last-username:v3';
 const PROGRESS_KEY = 'historia-usap:local-progress:v2';
 const PROGRESS_MIRROR_KEY = 'historia-usap:local-progress-mirror:v2';
 const ATTEMPTS_KEY = 'historia-usap:local-attempts:v2';
 const OLD_LOCAL_PREFIX = 'historia-usap:';
 const MAX_ATTEMPTS = 500;
 
-export async function getOrCreateProfile(): Promise<LocalProfile> {
-  if (typeof window === 'undefined') return { id: 'local-device', username: 'Nire gailua' };
-  const existing = readJson<LocalProfile>(PROFILE_KEY);
-  if (existing?.id) return existing;
-  const profile = {
-    id: createId(),
-    username: 'Nire gailua'
-  };
-  window.localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  return profile;
+let client: SupabaseClient | null = null;
+
+function supabase(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anon) return null;
+  client ??= createClient(url, anon);
+  return client;
+}
+
+export function isSupabaseConfigured(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
+export function getLastUsername(): string {
+  if (typeof window === 'undefined') return '';
+  return window.localStorage.getItem(LAST_USERNAME_KEY) ?? '';
+}
+
+export function clearLastUsername(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(LAST_USERNAME_KEY);
+}
+
+export async function getOrCreateProfile(username: string): Promise<Profile> {
+  const clean = normalizeUsername(username);
+  if (!clean) throw new Error('Idatzi erabiltzaile-izena.');
+  if (typeof window !== 'undefined') window.localStorage.setItem(LAST_USERNAME_KEY, clean);
+
+  const db = supabase();
+  if (!db) return { id: clean, username: clean, isLocal: true };
+
+  const existing = await db.from('profiles').select('id, username').eq('username', clean).maybeSingle();
+  if (existing.error) throw existing.error;
+  if (existing.data) {
+    await db.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', existing.data.id);
+    return { id: existing.data.id, username: existing.data.username, isLocal: false };
+  }
+
+  const created = await db
+    .from('profiles')
+    .insert({ username: clean, last_seen_at: new Date().toISOString() })
+    .select('id, username')
+    .single();
+  if (created.error) throw created.error;
+  return { id: created.data.id, username: created.data.username, isLocal: false };
 }
 
 export async function requestPersistentStorage(): Promise<boolean | null> {
@@ -54,46 +92,87 @@ export async function requestPersistentStorage(): Promise<boolean | null> {
   }
 }
 
-export async function loadProgress(_profile: LocalProfile): Promise<Record<string, ProgressItem>> {
-  const primary = readProgress(PROGRESS_KEY);
-  const mirror = readProgress(PROGRESS_MIRROR_KEY);
-  const legacy = loadLegacyProgress();
-  const merged = mergeProgress(mergeProgress(mirror, primary), legacy);
-  if (Object.keys(legacy).length || Object.keys(primary).length || Object.keys(mirror).length) {
-    saveLocalProgress(merged);
+export async function loadProgress(profile: Profile): Promise<Record<string, ProgressItem>> {
+  const local = loadAllLocalProgress();
+  const db = supabase();
+  if (!db || profile.isLocal) {
+    saveLocalProgress(local);
+    return local;
   }
+
+  const response = await db
+    .from('item_progress')
+    .select('item_id,item_type,mastery,streak,ease,due_at')
+    .eq('profile_id', profile.id);
+  if (response.error) throw response.error;
+
+  const remote = sanitizeProgress(
+    Object.fromEntries(
+      (response.data ?? []).map((row) => [
+        row.item_id,
+        {
+          itemId: row.item_id,
+          itemType: row.item_type,
+          mastery: Number(row.mastery ?? 0),
+          streak: Number(row.streak ?? 0),
+          ease: Number(row.ease ?? 1.4),
+          dueAt: row.due_at
+        } satisfies ProgressItem
+      ])
+    )
+  );
+  const merged = mergeProgress(remote, local);
+  saveLocalProgress(merged);
+  if (Object.keys(merged).length) await saveProgress(profile, merged);
   return merged;
 }
 
-export async function saveProgress(_profile: LocalProfile, progress: Record<string, ProgressItem>): Promise<void> {
+export async function saveProgress(profile: Profile, progress: Record<string, ProgressItem>): Promise<void> {
   saveLocalProgress(progress);
+  const db = supabase();
+  if (!db || profile.isLocal) return;
+
+  const rows = Object.values(progress).map((item) => ({
+    profile_id: profile.id,
+    item_id: item.itemId,
+    item_type: item.itemType,
+    mastery: item.mastery,
+    streak: item.streak,
+    ease: item.ease,
+    due_at: item.dueAt,
+    updated_at: new Date().toISOString()
+  }));
+  if (!rows.length) return;
+  const response = await db.from('item_progress').upsert(rows, { onConflict: 'profile_id,item_id' });
+  if (response.error) throw response.error;
 }
 
 export async function saveAttempt(input: {
-  profile: LocalProfile;
+  profile: Profile;
   type: AttemptType;
   score: number;
   maxScore: number;
   detail: unknown;
 }): Promise<void> {
-  if (typeof window === 'undefined') return;
-  const attempts = loadAttempts();
-  attempts.unshift({
-    id: createId(),
-    createdAt: new Date().toISOString(),
+  saveLocalAttempt(input);
+  const db = supabase();
+  if (!db || input.profile.isLocal) return;
+
+  const response = await db.from('attempts').insert({
+    profile_id: input.profile.id,
     type: input.type,
     score: input.score,
-    maxScore: input.maxScore,
+    max_score: input.maxScore,
     detail: input.detail
   });
-  window.localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts.slice(0, MAX_ATTEMPTS)));
+  if (response.error) throw response.error;
 }
 
 export function loadAttempts(): LocalAttempt[] {
   return readJson<LocalAttempt[]>(ATTEMPTS_KEY) ?? [];
 }
 
-export function createProgressBackup(profile: LocalProfile, progress: Record<string, ProgressItem>): BackupPayload {
+export function createProgressBackup(profile: Profile, progress: Record<string, ProgressItem>): BackupPayload {
   return {
     app: 'historia-usap-trainer',
     version: 2,
@@ -121,11 +200,37 @@ export function importProgressBackup(raw: string, current: Record<string, Progre
   return merged;
 }
 
+function saveLocalAttempt(input: {
+  type: AttemptType;
+  score: number;
+  maxScore: number;
+  detail: unknown;
+}): void {
+  if (typeof window === 'undefined') return;
+  const attempts = loadAttempts();
+  attempts.unshift({
+    id: createId(),
+    createdAt: new Date().toISOString(),
+    type: input.type,
+    score: input.score,
+    maxScore: input.maxScore,
+    detail: input.detail
+  });
+  window.localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(attempts.slice(0, MAX_ATTEMPTS)));
+}
+
 function saveLocalProgress(progress: Record<string, ProgressItem>): void {
   if (typeof window === 'undefined') return;
   const payload = JSON.stringify(progress);
   window.localStorage.setItem(PROGRESS_KEY, payload);
   window.localStorage.setItem(PROGRESS_MIRROR_KEY, payload);
+}
+
+function loadAllLocalProgress(): Record<string, ProgressItem> {
+  const primary = readProgress(PROGRESS_KEY);
+  const mirror = readProgress(PROGRESS_MIRROR_KEY);
+  const legacy = loadLegacyProgress();
+  return mergeProgress(mergeProgress(mirror, primary), legacy);
 }
 
 function readProgress(key: string): Record<string, ProgressItem> {
@@ -138,7 +243,7 @@ function loadLegacyProgress(): Record<string, ProgressItem> {
   for (let index = 0; index < window.localStorage.length; index += 1) {
     const key = window.localStorage.key(index);
     if (!key || !key.startsWith(OLD_LOCAL_PREFIX)) continue;
-    if ([PROFILE_KEY, PROGRESS_KEY, PROGRESS_MIRROR_KEY, ATTEMPTS_KEY].includes(key)) continue;
+    if ([LAST_USERNAME_KEY, PROGRESS_KEY, PROGRESS_MIRROR_KEY, ATTEMPTS_KEY].includes(key)) continue;
     const value = sanitizeProgress(readJson<Record<string, ProgressItem>>(key) ?? {});
     merged = mergeProgress(merged, value);
   }
@@ -189,6 +294,10 @@ function readJson<T>(key: string): T | null {
   } catch {
     return null;
   }
+}
+
+function normalizeUsername(value: string): string {
+  return value.trim().replace(/\s+/g, '-').toLocaleLowerCase('eu').slice(0, 40);
 }
 
 function createId(): string {

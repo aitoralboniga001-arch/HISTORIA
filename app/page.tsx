@@ -25,7 +25,8 @@ import {
   ShieldCheck,
   Target,
   Trophy,
-  Upload
+  Upload,
+  User
 } from 'lucide-react';
 import { events, texts } from '@/lib/content';
 import {
@@ -47,9 +48,12 @@ import {
   weakTrapCandidates
 } from '@/lib/exercises';
 import {
+  clearLastUsername,
   createProgressBackup,
+  getLastUsername,
   getOrCreateProfile,
   importProgressBackup,
+  isSupabaseConfigured,
   loadProgress,
   requestPersistentStorage,
   saveAttempt,
@@ -74,6 +78,8 @@ export default function Home() {
   const [orderingResult, setOrderingResult] = useState<number | null>(null);
   const [seleDone, setSeleDone] = useState(false);
   const [booting, setBooting] = useState(true);
+  const [username, setUsername] = useState('');
+  const [loginBusy, setLoginBusy] = useState(false);
   const [storagePersisted, setStoragePersisted] = useState<boolean | null>(null);
   const [message, setMessage] = useState('');
   const [now, setNow] = useState(0);
@@ -95,24 +101,17 @@ export default function Home() {
 
     async function boot() {
       try {
-        const nextProfile = await getOrCreateProfile();
         const persisted = await requestPersistentStorage();
-        const loaded = await loadProgress(nextProfile);
         if (!active) return;
-        setProfile(nextProfile);
-        setProgress(loaded);
         setStoragePersisted(persisted);
+        const rememberedUsername = getLastUsername();
+        setUsername(rememberedUsername);
         setNow(Date.now());
-        setAkats(createSeleAkatsExercise(loaded));
-        setOrdering(createSeleOrderingExercise(loaded));
-        setSelectedPieces([]);
-        setAnswers({});
-        setAkatsResult(null);
-        setOrderingResult(null);
-        setSeleDone(false);
-        setSection('sele');
+        if (rememberedUsername) {
+          await openProfile(rememberedUsername, { quiet: true });
+        }
       } catch (error) {
-        if (active) setMessage(error instanceof Error ? error.message : 'Ezin izan da tokiko aurrerapena ireki.');
+        if (active) setMessage(error instanceof Error ? error.message : 'Ezin izan da hasieratu.');
       } finally {
         if (active) setBooting(false);
       }
@@ -124,6 +123,60 @@ export default function Home() {
     };
   }, []);
 
+  async function openProfile(nextUsername: string, options?: { quiet?: boolean }) {
+    if (!nextUsername.trim()) {
+      setMessage('Idatzi erabiltzaile-izena.');
+      return;
+    }
+    setLoginBusy(true);
+    if (!options?.quiet) setMessage('');
+    try {
+      const nextProfile = await getOrCreateProfile(nextUsername);
+      const loaded = await loadProgress(nextProfile);
+      setProfile(nextProfile);
+      setProgress(loaded);
+      setNow(Date.now());
+      setAkats(createSeleAkatsExercise(loaded));
+      setOrdering(createSeleOrderingExercise(loaded));
+      setSelectedPieces([]);
+      setAnswers({});
+      setAkatsResult(null);
+      setOrderingResult(null);
+      setSeleDone(false);
+      setSection('sele');
+      if (!options?.quiet) {
+        setMessage(
+          nextProfile.isLocal
+            ? 'Supabase ez dago konfiguratuta: aurrerapena gailu honetan gordeko da.'
+            : 'Aurrerapena Supabase-rekin sinkronizatuta dago.'
+        );
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Ezin izan da erabiltzailea ireki.');
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
+  async function enter() {
+    await openProfile(username);
+  }
+
+  function leaveProfile() {
+    clearLastUsername();
+    setProfile(null);
+    setUsername('');
+    setProgress({});
+    setAkats(null);
+    setOrdering(null);
+    setSelectedPieces([]);
+    setAnswers({});
+    setAkatsResult(null);
+    setOrderingResult(null);
+    setSeleDone(false);
+    setMessage('');
+  }
+
   async function persist(nextProgress: Record<string, ProgressItem>) {
     setProgress(nextProgress);
     setNow(Date.now());
@@ -133,6 +186,22 @@ export default function Home() {
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Aurrerapena ezin izan da gorde.');
     }
+  }
+
+  function togglePiece(piece: Selection) {
+    setSelectedPieces((prev) => {
+      const exists = prev.some((item) => item.id === piece.id);
+      if (exists) {
+        setAnswers((prevAnswers) => {
+          const copy = { ...prevAnswers };
+          delete copy[piece.trapId ?? piece.id];
+          return copy;
+        });
+        return prev.filter((item) => item.id !== piece.id);
+      } else {
+        return prev.length < 5 ? [...prev, piece] : prev;
+      }
+    });
   }
 
   function newAkats() {
@@ -285,17 +354,58 @@ export default function Home() {
 
   if (booting || !profile) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-3xl items-center justify-center px-5 py-10">
-        <section className="glass-panel w-full rounded-3xl p-8 text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200">
-            <ShieldCheck size={28} />
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-5 py-10">
+        <section className="grid w-full min-w-0 gap-6 md:grid-cols-[1.1fr_0.9fr] md:items-center">
+          <div className="min-w-0">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-600/25 bg-emerald-50/70 px-4 py-1.5 text-sm font-black text-emerald-800 shadow-sm">
+              <ShieldCheck size={16} /> Supabase sync
+            </p>
+            <h1 className="max-w-full break-words text-balance text-4xl font-black tracking-tight text-slate-900 sm:text-5xl md:text-7xl font-serif">
+              Zure aurrerapena izenarekin gordeta.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700 sm:text-xl">
+              Idatzi erabiltzaile-izena bakarrik. Pasahitzik gabe: izen horrekin zure akatsak,
+              kronologia eta errepikapenak Supabase-n sinkronizatuko dira.
+            </p>
           </div>
-          <p className="text-sm font-black uppercase tracking-widest text-emerald-700">Tokiko modua</p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950 font-serif">Zure plana prestatzen...</h1>
-          <p className="mx-auto mt-3 max-w-xl text-slate-600">
-            Ez dago saio-hasierarik. Aurrerapena gailu honetako biltegiratze lokalean gordeko da automatikoki.
-          </p>
-          {message && <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">{message}</p>}
+          <div className="glass-panel min-w-0 rounded-3xl p-5 sm:p-8">
+            <label className="text-sm font-bold tracking-wide uppercase text-slate-500" htmlFor="username">
+              Erabiltzaile-izena
+            </label>
+            <div className="mt-2 grid gap-2 sm:flex">
+              <input
+                id="username"
+                className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white/80 px-4 py-3 font-bold outline-none ring-emerald-700/20 focus:ring-4"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void enter();
+                }}
+                placeholder="adib. aitor"
+                disabled={booting || loginBusy}
+              />
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-900 px-5 py-3 font-black text-white transition hover:bg-emerald-800 disabled:opacity-60"
+                onClick={() => void enter()}
+                disabled={booting || loginBusy}
+              >
+                <User size={18} /> Sartu
+              </button>
+            </div>
+            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-relaxed text-emerald-950">
+              <p className="font-black">Nola funtzionatzen du?</p>
+              <p className="mt-1">
+                Izen bera erabiltzen baduzu PC-an eta mugikorrean, progresu bera kargatuko da.
+                Ez erabili izen oso generikoak beste norbaitek ez nahasteko.
+              </p>
+            </div>
+            {!isSupabaseConfigured() && (
+              <p className="mt-3 rounded-xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+                Supabase env aldagaiak falta dira: oraingoz tokiko moduan gordeko da.
+              </p>
+            )}
+            {message && <p className="mt-3 rounded-xl bg-white/70 px-4 py-3 text-sm font-bold text-slate-700">{message}</p>}
+          </div>
         </section>
       </main>
     );
@@ -306,10 +416,12 @@ export default function Home() {
       <header className="glass-panel grid gap-6 rounded-3xl p-6 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <p className="text-sm font-bold uppercase tracking-widest text-emerald-700/80">Historia USaP Trainer</p>
-          <h1 className="text-3xl font-black text-slate-950 mt-1 font-serif">Sele entrenamendua</h1>
+          <h1 className="text-3xl font-black text-slate-950 mt-1 font-serif">Kaixo, {profile.username}</h1>
           <p className="mt-2 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-600">
             <ShieldCheck size={16} className="text-emerald-700" />
-            {storagePersisted === true
+            {!profile.isLocal
+              ? 'Supabase sinkronizazioa aktibo'
+              : storagePersisted === true
               ? 'Biltegiratze iraunkorra aktibo'
               : storagePersisted === false
                 ? 'Tokiko biltegiratzea aktibo: egin babeskopia noizean behin'
@@ -344,6 +456,12 @@ export default function Home() {
               accept="application/json"
               onChange={(event) => void importBackup(event)}
             />
+            <button
+              className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-white/70 bg-white/55 px-4 py-2 text-sm font-black text-slate-700 shadow-sm transition-all hover:bg-white"
+              onClick={leaveProfile}
+            >
+              Aldatu izena
+            </button>
           </div>
         </div>
       </header>
@@ -480,15 +598,7 @@ export default function Home() {
             exercise={akats}
             selected={new Set(selectedPieces.map((piece) => piece.id))}
             answers={answers}
-            onToggle={(piece) =>
-              setSelectedPieces((prev) =>
-                prev.some((item) => item.id === piece.id)
-                  ? prev.filter((item) => item.id !== piece.id)
-                  : prev.length < 5
-                    ? [...prev, piece]
-                    : prev
-              )
-            }
+            onToggle={togglePiece}
             onAnswerChange={(id, val) => setAnswers((prev) => ({ ...prev, [id]: val }))}
           />
           <aside className="glass-panel rounded-3xl p-6 flex flex-col">
@@ -535,7 +645,7 @@ export default function Home() {
                       </div>
                       <button 
                         className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-rose-500 transition-colors shrink-0"
-                        onClick={() => setSelectedPieces((prev) => prev.filter((item) => item.id !== piece.id))}
+                        onClick={() => togglePiece(piece)}
                         title="Kendu"
                       >
                         <RotateCcw size={16} />
@@ -560,7 +670,7 @@ export default function Home() {
       {section === 'gertakariak' && <Timeline />}
 
       {section === 'ordenatu' && ordering && (
-        <section className="glass-panel rounded-3xl p-8">
+        <section className="glass-panel rounded-3xl p-5 sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold tracking-widest uppercase text-teal-700 mb-1">{ordering.title}</p>
@@ -582,9 +692,9 @@ export default function Home() {
                 onDragStart={(dragEvent) => dragEvent.dataTransfer.setData('text/plain', String(index))}
                 onDragOver={(dragEvent) => dragEvent.preventDefault()}
                 onDrop={(dragEvent) => moveEvent(Number(dragEvent.dataTransfer.getData('text/plain')), index)}
-                className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-4 rounded-2xl border border-slate-200 bg-white/80 px-5 py-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-grab active:cursor-grabbing active:scale-[0.98] active:shadow-lg"
+                className="grid grid-cols-[1fr_auto_auto] md:grid-cols-[auto_1fr_auto_auto] items-center gap-4 rounded-2xl border border-slate-200 bg-white/80 px-5 py-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 md:cursor-grab md:active:cursor-grabbing active:scale-[0.98] active:shadow-lg"
               >
-                <GripVertical className="text-slate-400" size={20} />
+                <GripVertical className="hidden md:block text-slate-400" size={20} />
                 <span className="text-lg font-bold text-slate-800">{event.label}</span>
                 <span className="hidden rounded-lg bg-white/80 px-3 py-1.5 text-sm font-bold text-slate-600 shadow-sm border border-slate-200/50 sm:inline">{event.theme}</span>
                 <span className="flex gap-2">
@@ -615,7 +725,7 @@ export default function Home() {
             Zuzendu
           </button>
           {orderingResult !== null && (
-            <div className="mt-8 rounded-2xl border border-teal-200/50 bg-teal-50/50 p-6 backdrop-blur-sm shadow-sm">
+            <div className="mt-8 rounded-2xl border border-teal-200/50 bg-teal-50/50 p-6 backdrop-blur-sm shadow-sm animate-fade-in">
               <p className="text-4xl font-black text-teal-900 mb-4">{formatOfficialScore(orderingResult)} <span className="text-2xl text-teal-700/50">/ 1</span></p>
               <p className="text-sm font-bold uppercase tracking-wider text-teal-800">
                 Nota ofiziala: {orderingResult === 1 ? '5 hurrenkeran' : orderingResult === 0.75 ? '4 hurrenkeran' : orderingResult === 0.5 ? '3 hurrenkeran' : orderingResult === 0.25 ? '2 hurrenkeran' : 'hurrenkera nahikorik ez'}
@@ -684,15 +794,7 @@ export default function Home() {
               exercise={akats}
               selected={new Set(selectedPieces.map((piece) => piece.id))}
               answers={answers}
-              onToggle={(piece) =>
-                setSelectedPieces((prev) =>
-                  prev.some((item) => item.id === piece.id)
-                    ? prev.filter((item) => item.id !== piece.id)
-                    : prev.length < 5
-                      ? [...prev, piece]
-                      : prev
-                )
-              }
+              onToggle={togglePiece}
               onAnswerChange={(id, val) => setAnswers((prev) => ({ ...prev, [id]: val }))}
             />
             <aside className="glass-panel rounded-3xl p-6">
@@ -737,7 +839,7 @@ export default function Home() {
                         </div>
                         <button 
                           className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-rose-500 transition-colors shrink-0"
-                          onClick={() => setSelectedPieces((prev) => prev.filter((item) => item.id !== piece.id))}
+                          onClick={() => togglePiece(piece)}
                           title="Kendu"
                         >
                           <RotateCcw size={16} />
@@ -751,7 +853,7 @@ export default function Home() {
             </aside>
           </section>
 
-          <section className="glass-panel rounded-3xl p-8">
+          <section className="glass-panel rounded-3xl p-5 sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-bold tracking-widest uppercase text-teal-700">{ordering.title}</p>
@@ -769,9 +871,9 @@ export default function Home() {
                   onDragStart={(dragEvent) => dragEvent.dataTransfer.setData('text/plain', String(index))}
                   onDragOver={(dragEvent) => dragEvent.preventDefault()}
                   onDrop={(dragEvent) => moveEvent(Number(dragEvent.dataTransfer.getData('text/plain')), index)}
-                  className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-2xl border border-slate-200 bg-white/80 px-5 py-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-grab active:cursor-grabbing active:scale-[0.98] active:shadow-lg"
+                  className="grid grid-cols-[1fr_auto] md:grid-cols-[auto_1fr_auto] items-center gap-4 rounded-2xl border border-slate-200 bg-white/80 px-5 py-4 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 md:cursor-grab md:active:cursor-grabbing active:scale-[0.98] active:shadow-lg"
                 >
-                  <GripVertical className="text-slate-400" size={20} />
+                  <GripVertical className="hidden md:block text-slate-400" size={20} />
                   <span className="text-lg font-bold text-slate-800">{event.label}</span>
                   <span className="flex gap-2">
                     <button className="rounded-lg bg-white p-2 shadow-sm disabled:opacity-30" onClick={() => moveEvent(index, index - 1)} disabled={index === 0} title="Gora">
@@ -792,7 +894,7 @@ export default function Home() {
               {selectedPieces.length === 5 ? 'Simulakroa zuzendu' : `A1ean ${5 - selectedPieces.length} falta dira`}
             </button>
             {orderingResult !== null && (
-              <div className="mt-6 rounded-2xl border border-teal-200/50 bg-teal-50/60 p-5">
+              <div className="mt-6 rounded-2xl border border-teal-200/50 bg-teal-50/60 p-5 animate-fade-in">
                 <p className="text-3xl font-black text-teal-900">{formatOfficialScore(orderingResult)} / 1</p>
                 <ol className="mt-4 list-decimal space-y-2 pl-6 font-medium text-slate-700">
                   {[...ordering.events].sort(compareEvents).map((event) => (
@@ -808,6 +910,37 @@ export default function Home() {
       )}
 
       {section === 'emaitzak' && <Results progress={progress} now={now} />}
+
+      {/* Floating Mobile Sticky Bar for quick progress & evaluation */}
+      {selectedPieces.length > 0 && (section === 'akatsak' || section === 'sele') && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 xl:hidden transition-all duration-300">
+          <div className="glass-panel rounded-2xl p-4 shadow-xl border border-white/80 flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">A1. Aurrerapena</span>
+              <span className="text-sm font-black text-slate-800">Hautatuta: {selectedPieces.length}/5</span>
+            </div>
+            <button
+              onClick={() => {
+                if (section === 'akatsak') {
+                  void finishAkats();
+                } else {
+                  // Scroll directly to the "Simulakroa zuzendu" button
+                  const submitBtn = document.querySelector('button[class*="bg-rose-600"]');
+                  if (submitBtn) {
+                    submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                    void finishSele();
+                  }
+                }
+              }}
+              disabled={selectedPieces.length !== 5}
+              className="rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-black text-white shadow-md shadow-teal-900/10 disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none transition-all hover:bg-teal-500 active:scale-95"
+            >
+              {selectedPieces.length === 5 ? 'Zuzendu' : `${5 - selectedPieces.length} falta dira`}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -964,12 +1097,34 @@ function TrainingDashboard({
               4. Testua
             </button>
           </div>
-          <div className="mt-8 h-3 overflow-hidden rounded-full bg-white/10 ring-1 ring-inset ring-white/10">
-            <div className="h-full rounded-full bg-teal-400 relative shadow-[0_0_10px_rgba(45,212,191,0.35)]" style={{ width: `${Math.min(100, mastery)}%` }}>
-              <div className="absolute inset-0 bg-white/20 w-full h-full mix-blend-overlay"></div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div>
+              <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <span>Domeinu Orokorra</span>
+                <span className="text-teal-400 font-extrabold">{mastery}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-white/10 ring-1 ring-inset ring-white/10">
+                <div className="h-full rounded-full bg-teal-400 relative shadow-[0_0_10px_rgba(45,212,191,0.35)]" style={{ width: `${Math.min(100, mastery)}%` }}>
+                  <div className="absolute inset-0 bg-white/20 w-full h-full mix-blend-overlay"></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                <span>XP Maila Progress</span>
+                <span className="text-indigo-300 font-extrabold">{xp % 220} / 220 XP</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-white/10 ring-1 ring-inset ring-white/10">
+                <div className="h-full rounded-full bg-indigo-400 relative shadow-[0_0_10px_rgba(129,140,248,0.35)]" style={{ width: `${((xp % 220) / 220) * 100}%` }}>
+                  <div className="absolute inset-0 bg-white/20 w-full h-full mix-blend-overlay"></div>
+                </div>
+              </div>
             </div>
           </div>
-          <p className="mt-3 text-sm font-medium text-slate-400">{nextLevel} XP falta zaizkizu hurrengo mailarako - {due} item errepasatzeko</p>
+          <p className="mt-4 text-sm font-medium text-slate-400">
+            {nextLevel} XP falta zaizkizu hurrengo mailarako — <span className="text-amber-400 font-bold">{due} item</span> errepasatzeko
+          </p>
         </div>
       </div>
       <div className="glass-panel rounded-3xl p-8 flex flex-col">
@@ -998,6 +1153,7 @@ function TrainingDashboard({
 function TextStudy({ text, progress }: { text: TextSource; progress: Record<string, ProgressItem> }) {
   const [showMarks, setShowMarks] = useState(true);
   const [filter, setFilter] = useState<'all' | 'high' | 'weak'>('all');
+  const [activeMark, setActiveMark] = useState<ReturnType<typeof studyMarks>[number] | null>(null);
   const allMarks = useMemo(() => studyMarks(text), [text]);
   const marks = allMarks.filter((mark) => {
     if (filter === 'high') return mark.priority >= 5;
@@ -1051,8 +1207,42 @@ function TextStudy({ text, progress }: { text: TextSource; progress: Record<stri
         </div>
       </div>
       <div className="mt-8 rounded-2xl bg-white/40 p-6 md:p-8 border border-white/60 shadow-inner">
-        <p className="text-lg leading-relaxed text-slate-800 font-medium">{showMarks ? renderMarkedText(text.body, marks) : text.body}</p>
+        <p className="text-lg leading-relaxed text-slate-800 font-medium">{showMarks ? renderMarkedText(text.body, marks, setActiveMark) : text.body}</p>
       </div>
+
+      {showMarks && activeMark && (
+        <div className="mt-6 rounded-2xl border border-amber-200/50 bg-amber-50/70 p-5 shadow-md backdrop-blur-md animate-fade-in relative overflow-hidden">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-500 to-yellow-500" />
+          <button 
+            className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-white shadow-md hover:bg-slate-700 active:scale-95 transition-all"
+            onClick={() => setActiveMark(null)}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-amber-100 px-2.5 py-0.5 text-xs font-black text-amber-800 border border-amber-200 uppercase tracking-wider">
+              {categoryLabel(activeMark.category)}
+            </span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Arrisku-Puntua</span>
+          </div>
+          
+          <h3 className="mt-3 text-2xl font-black text-slate-900 font-serif flex items-center gap-2 flex-wrap">
+            <span className="text-slate-400 line-through text-lg">{activeMark.wrong}</span>
+            <span className="text-amber-600 font-black">→ {activeMark.correct}</span>
+          </h3>
+          
+          <div className="mt-4 border-t border-amber-200/40 pt-3 flex items-start gap-3">
+            <div className="rounded-lg bg-amber-100 p-2 text-amber-800 shrink-0">
+              <Brain size={18} />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-800 uppercase tracking-wider">Zergatik da tranpa?</p>
+              <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-700">{activeMark.reason}</p>
+            </div>
+          </div>
+        </div>
+      )}
       {showMarks && (
         <div className="mt-6 grid gap-3 md:grid-cols-2">
           {marks.slice(0, 10).map((mark) => (
@@ -1082,19 +1272,23 @@ function studyMarks(text: TextSource) {
     .filter((item, index, list) => index === 0 || item.start >= list[index - 1].end);
 }
 
-function renderMarkedText(body: string, marks: ReturnType<typeof studyMarks>) {
+function renderMarkedText(
+  body: string, 
+  marks: ReturnType<typeof studyMarks>,
+  onMarkClick: (mark: ReturnType<typeof studyMarks>[number]) => void
+) {
   const nodes: ReactNode[] = [];
   let cursor = 0;
   marks.forEach((mark) => {
     nodes.push(body.slice(cursor, mark.start));
     nodes.push(
-      <span
+      <button
         key={mark.id}
-        className="rounded border-b-2 border-amber-500 bg-amber-50 px-1 font-bold text-amber-950"
-        title={`${mark.reason} Aukerak: ${mark.wrong}`}
+        onClick={() => onMarkClick(mark)}
+        className="rounded border-b-2 border-amber-500 bg-amber-50/70 px-1 font-extrabold text-amber-950 hover:bg-amber-100 active:scale-95 transition-all cursor-pointer inline align-baseline"
       >
         {body.slice(mark.start, mark.end)}
-      </span>
+      </button>
     );
     cursor = mark.end;
   });
@@ -1117,7 +1311,7 @@ function ExerciseText({
 }) {
   const nodes = renderExercisePieces(exercise, selected, answers, onToggle, onAnswerChange);
   return (
-    <article className="glass-panel rounded-3xl p-8">
+    <article className="glass-panel rounded-3xl p-5 sm:p-8 exercise-text-container">
       <div className="mb-6 flex flex-wrap gap-3">
         <span className="rounded-xl bg-white/60 px-3 py-1.5 text-sm font-bold text-slate-700 shadow-sm border border-slate-200/50 backdrop-blur-sm">
           {exercise.text.number}. {exercise.text.title}
@@ -1208,9 +1402,21 @@ function SelectablePiece({
   onAnswerChange?: (val: string) => void;
   children: ReactNode;
 }) {
+  const containerRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (selected && containerRef.current) {
+      const element = containerRef.current;
+      const timer = setTimeout(() => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [selected]);
+
   if (selected) {
     return (
-      <span className="relative inline-flex items-center mx-1 my-1 align-middle z-10">
+      <span ref={containerRef} className="relative inline-flex items-center mx-1 my-1 align-middle z-10">
         <button 
           className="rounded-l-lg bg-rose-600 px-3 py-1 font-black text-white shadow-lg hover:bg-rose-500 transition-colors line-through"
           onClick={() => onToggle(piece)}
@@ -1224,16 +1430,21 @@ function SelectablePiece({
           placeholder="Zuzen..."
           value={answer ?? ''}
           onChange={(e) => onAnswerChange?.(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur();
+            }
+          }}
         />
         <button 
-          className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 text-white shadow-md hover:bg-slate-700 hover:scale-110 transition-transform" 
+          className="absolute -right-2.5 -top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-white shadow-md hover:bg-slate-700 hover:scale-110 active:scale-95 transition-all" 
           onClick={(e) => {
             e.stopPropagation();
             onToggle(piece);
           }}
           title="Descartar"
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </span>
     );
@@ -1252,7 +1463,7 @@ function SelectablePiece({
 function AkatsResultView({ result, selectedPieces }: { result: AkatsResult; selectedPieces: Selection[] }) {
   const falseSelections = selectedPieces.filter((piece) => !piece.trapId);
   return (
-    <div className="mt-6 rounded-2xl border border-teal-200/50 bg-teal-50/50 p-5 backdrop-blur-sm shadow-sm">
+    <div className="mt-6 rounded-2xl border border-teal-200/50 bg-teal-50/50 p-5 backdrop-blur-sm shadow-sm animate-fade-in">
       <div className="flex items-center justify-between mb-2">
         <p className="text-3xl font-black text-teal-900">{result.total.toFixed(1)} <span className="text-xl text-teal-700/50">/ 2</span></p>
         <div className="text-right">
@@ -1386,11 +1597,11 @@ function Results({ progress, now }: { progress: Record<string, ProgressItem>; no
       </div>
       <div className="mt-6 overflow-hidden rounded-2xl border border-white/60 bg-white/40 shadow-sm backdrop-blur-md">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[650px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[500px] sm:min-w-[650px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-white/60 bg-white/50 text-slate-600 font-bold uppercase tracking-wider text-xs">
                 <th className="py-4 px-6">Itema</th>
-                <th className="py-4 px-6">Mota</th>
+                <th className="py-4 px-6 hidden sm:table-cell">Mota</th>
                 <th className="py-4 px-6">Domeinua</th>
                 <th className="py-4 px-6">Bolada</th>
                 <th className="py-4 px-6">Hurrengoan</th>
@@ -1400,13 +1611,13 @@ function Results({ progress, now }: { progress: Record<string, ProgressItem>; no
               {rows.map((item) => (
                 <tr key={item.itemId} className="transition-colors hover:bg-white/60">
                   <td className="py-4 px-6 font-bold text-slate-800">{progressLabel(item, knownCandidates)}</td>
-                  <td className="py-4 px-6 text-slate-600 font-medium">
+                  <td className="py-4 px-6 text-slate-600 font-medium hidden sm:table-cell">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-200">
                       {progressTypeLabel(item.itemType)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className="inline-flex min-w-[8rem] items-center gap-3 font-bold text-slate-700">
+                    <span className="inline-flex min-w-[7rem] sm:min-w-[8rem] items-center gap-3 font-bold text-slate-700">
                       <span className="w-8 text-right">{Math.round(item.mastery * 100)}%</span>
                       <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-200/80 shadow-inner">
                         <span className="block h-full rounded-full bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.25)]" style={{ width: `${Math.round(item.mastery * 100)}%` }} />
@@ -1414,7 +1625,7 @@ function Results({ progress, now }: { progress: Record<string, ProgressItem>; no
                     </span>
                   </td>
                   <td className="py-4 px-6 font-black text-slate-700">{item.streak}</td>
-                  <td className="py-4 px-6 text-slate-500 font-medium">{new Date(item.dueAt).toLocaleString('eu-ES')}</td>
+                  <td className="py-4 px-6 text-slate-500 font-bold whitespace-nowrap">{formatDueDate(item.dueAt, now)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1445,4 +1656,22 @@ function progressTypeLabel(type: ProgressItem['itemType']): string {
   if (type === 'trap') return 'Akatsa';
   if (type === 'event') return 'Gertakaria';
   return 'Sorta';
+}
+
+function formatDueDate(dueStr: string, now: number): string {
+  const due = new Date(dueStr);
+  const diffMs = due.getTime() - now;
+  const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+  
+  if (diffMs <= 0) {
+    return 'Orain';
+  }
+  if (diffDays === 1) {
+    return 'Bihar';
+  }
+  if (diffDays <= 7) {
+    return `${diffDays} egun barru`;
+  }
+  
+  return due.toLocaleDateString('eu-ES', { month: 'short', day: 'numeric' });
 }

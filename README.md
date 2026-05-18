@@ -11,9 +11,11 @@ Web app euskaraz para practicar Historia USaP/PAU, lista para Vercel y empaqueta
 - `Ordenatu praktikatu`: ordenar 5 gertakariak arrastrando, maximo 1 punto.
 - `Emaitzak`: dominio, rachas y proximos repasos.
 
-## Progreso
+## Progreso y Supabase
 
-No hay login, cuenta ni Supabase. La app guarda todo en el dispositivo:
+La app usa autenticacion suave por `erabiltzaile-izena`: solo se escribe un nombre de usuario, sin email ni contrasena. Ese nombre crea o abre un perfil en Supabase y sincroniza el progreso entre PC y movil.
+
+Tambien mantiene una copia local:
 
 - `localStorage` principal.
 - copia espejo local por seguridad.
@@ -21,7 +23,21 @@ No hay login, cuenta ni Supabase. La app guarda todo en el dispositivo:
 - boton `Babeskopia` para exportar JSON.
 - boton `Inportatu` para recuperar una copia.
 
-Importante: si el usuario borra los datos del navegador o desinstala la app movil, el sistema operativo puede eliminar el progreso. Para evitarlo, conviene exportar una babeskopia de vez en cuando.
+Importante: como no hay contrasena, si otra persona usa exactamente el mismo nombre podria ver o modificar ese progreso. Usa un nombre suficientemente personal.
+
+Para Supabase:
+
+1. Crea un proyecto en Supabase.
+2. Ejecuta `supabase/schema.sql` en el SQL editor.
+3. Copia `.env.local.example` a `.env.local`.
+4. Rellena:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+Sin esas variables, la app funciona en modo local.
 
 ## Desarrollo
 
@@ -39,7 +55,7 @@ En Vercel:
 1. Sube este directorio a GitHub.
 2. Importa el repo en Vercel.
 3. Build command: `npm run build`.
-4. No hacen falta variables de entorno.
+4. Anade en Project Settings las variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ## Android / Capacitor
 

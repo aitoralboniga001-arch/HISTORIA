@@ -97,3 +97,28 @@ select {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+.exercise-text-container {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.exercise-text-container input {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
