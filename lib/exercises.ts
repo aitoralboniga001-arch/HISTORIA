@@ -430,14 +430,14 @@ export const seleAkatsSets: SeleAkatsSet[] = [
     id: 'sele-akats-15-a',
     textId: 'text-15',
     title: '1936ko Estatutua: lurraldea eta hizkuntza',
-    corrects: ['Errepublikako', 'Arabak, Gipuzkoak eta Bizkaiak', 'Euskara', 'Euskara, gaztelania bezala', 'Bizkaiko gobernadore zibilak'],
+    corrects: ['Erkalaren (Errepublikaren)', 'Araba, Gipuzkoa eta Bizkaya', 'Euzkera', "Euzkadi'ko laterri-izkera (hizkuntza ofiziala)", "Bizkaya'ko Jaurlaria"],
     priority: 10
   },
   {
     id: 'sele-akats-15-b',
     textId: 'text-15',
     title: '1936ko Estatutua: demokrazia eta erakundeak',
-    corrects: ['espainiar', 'Bizkaiko', 'sufragio unibertsal, berdin, zuzen eta sekretu', 'Gobernuak', 'hizkuntza ofiziala'],
+    corrects: ['España laterriaren (estatuaren)', "Bizkaya'ko Jaurlaria", 'auteskunde orokar (orokor), zuzen eta ixilen', 'Bitarteko (Behin-behineko) Jaurlaritza', 'Lendakariaren'],
     priority: 9
   },
   {

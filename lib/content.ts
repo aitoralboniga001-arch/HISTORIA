@@ -116,10 +116,10 @@ export const texts = [
   {
     "id": "text-15",
     "number": 15,
-    "title": "Euskal Herriko Autonomia Estatutua",
+    "title": "Euzkadiren Berjabetasun Araudia / Euzkadiko Autonomia Estatutua",
     "date": "1936-10-04",
     "theme": "Gerra Zibila",
-    "body": "Diputatuen Kongresuak honako LEGE hau agindu eta berretsi du: 1. art. Errepublikako Konstituzioaren eta Estatutu honen arabera, Arabak, Gipuzkoak eta Bizkaiak eskualde autonomoa osatzen dute espainiar estatuaren barruan eta “Euskal Herria” izena hartu du. Bere lurraldea aipatutako probintziek gaur egun osatzen dutena izango da eta horiek, aldi berean, modu autonomoan gobernatuko dira (…). Euskara, gaztelania bezala, Euskal Herriko hizkuntza ofiziala izango da (…). 5. art. Euskal Herriari dagokio bere lurralde autonomoaren barruko babes juridikorako eta ordena publikoa mantentzeko polizia erregimena ezartzea. 10. art. Euskal Herriaren botereak herrian sortzen dira eta Errepublikako Konstituzioaren eta Estatutu honen arabera erabiliko dituzte berak erabakitzen dituen organoek honako mugapen hauen arabera: a. Eskualdeko organo legegilea (…) sufragio unibertsal, berdin, zuzen eta sekretu bidez (…) hautatuko da. b. Organo betearazleak organo legegilearen konfiantza izan behar du eta presidentea izango da eskualdearen ordezkaria Errepublikarekiko harremanetarako (…). Lehen xedapen iragankorra. Gerra zibilak eragindako ez ohiko baldintzek irauten duten bitartean, Euskal Herrian behin-behineko Gobernuak aginduko du Estatutu honetan xedatutako eskumen guztiekin. Behin-behineko Gobernu horretako lehendakaria Estatutua promulgatu ondorengo zortzi egunen barruan izendatuko dute euskal udalak osatzen dituzten eta euren botoa askatasunez eman dezaketen herriak aukeratutako zinegotziek (…). Behin-behineko Gobernuko lehendakariaren hautaketa Bizkaiko gobernadore zibilak egiaztatuko du (…). Horrela hautatutako lehendakariak behin-behineko Gobernuko kideak izendatuko ditu eta horiek ez dira bost baino gutxiago izango (...) Gaceta de Madrid , 281. alea, 1936ko urriaren 7koa. Euskal Herriko Agintaritzaren Aldizkariaren 1. alea, 1936ko urriaren 9koa"
+    "body": "Oharra: Testu hau Euzkadi'ko Agintarizaren Egunerokoan argitaratutako jatorrizko bertsioa da. Testua ulertzeko zailtasunak leuntzeko asmoz, hurrengo bertsioan parentesi artean argitzen dira egun ohikoak ez diren hainbat hitz, eta aldi berean grafia pixka bat eguneratu da. Diputatuen Kongresuak honako Lege hau agindu eta berretsi du: 1go. atala.- Erkalaren (Errepublikaren) araudi nagusiak eta Araudi onek diotenez, Araba, Gipuzkoa eta Bizkaya, España laterriaren (estatuaren) soin barrunean, berjabetasunez janzten dira, Euzkadi izentzat arturik. Aitatutako erkiak (probintziek) dituzten lurraldeak osatuko dute lurki (eskualde) berri au. Erki bakoitza bere buruaren jabe izango da, (...) Euzkera, gaztelera lez, Euzkadi'ko laterri-izkera (hizkuntza ofiziala) izango da. 5'en atala.- Berjabetasuna dun Erkian (probintzia) legea babesteko eta erri-pakeari iraunerazteko uri-zaintza arazoa Euzkadi'ren esku dago. 10'gn. atala.- Euzkadi'ko Agintaritza erriagandik sortua da. Erkalaren (Errepublikaren) Araudi Nagusiak eta Araudi onek diotenaren arauz, erriak nai dun bezela erabiliko da. Esi (Hesi) oietxek izango ditu ordea: a) Legeak emango ditun Batzarrean (Erakunde legegilean) 25.000 biztanlek ordezkari bat izan bearko dute gutxienez. Beste edozein Lege-emale Batzarren (Erakunde legegileren) gixa, auteskunde orokar (orokor), zuzen eta ixilen bidez autuak diralarik. b) Legeak bete eraziko ditun Batzordeari (Erakunde betearealzeari) Lege emailleen uste ona bearrezkoa izango zaio. Erkiaren Erkalarekiko (Errepublikarekiko) artuemanak (...) Lendakariaren gain izango da. Bitarteko erabakiak. Lenengoa. Oraingo gudak diraun bitartean, Araudi onek aitortzen ditun eskubide guzien jabe dan bitarteko (behin-behineko) Jaurlaritza baten esku izango da erri-agintea (gobernua). Bitarteko Jaurlaritza onen Lendakaria, Araudia baieztu dala jakin-erazten dan egunaren zortziurrenaren mendean autua izan bedi, erriak autu eta gaur Udal-gizon izanik bere autarkia azkatasun osoz eman lezateken ziñegotzien autarkiz (hautaketaz). (...) Bitarteko (Behin-behineko) Lendakari aututze ontarako Bizkaya'ko Jaurlaria izango da buru, beronek dion leku eta egunean. (...) Era onetan antutako Lendakariak esango du Jaurlaritzarako zeintzuk izan. Gutxienez bost lagun izendatuko ditu. Gaceta de Madrid, 281. zenbakia, 1936ko urriaren 7koa. Euzkadi'ko Agintaritzaren Egunerokoa, 1. zenbakia, 1936ko urriaren 9koa"
   },
   {
     "id": "text-16",
@@ -159,7 +159,7 @@ export const texts = [
     "title": "Estatuaren Lege Organikoa",
     "date": "1967-01-11",
     "theme": "Frankismoa",
-    "body": "Orain arte promulgatutako legeek erakunde antolamenduek behar duten gai gehienak hartzen dituzte.(…). Iritsi da estatu nazionalaren erakundetzea amaitzeko une egokia (…). Horren kariaz, (…), honako hau xedatzen dut: 1. art. Espainiar estatua, erresuma gisa eratutakoa, erkidego nazionalaren erakunde gorena da. 2. art. I. Subiranotasun nazionala bakarra eta zatiezina da eta ezin da ez ordezkatu ez laga. II. Espainiar estatuaren erakunde sistema botere-batasunaren eta funtzio koordinazioaren printzipioetan oinarritzen da. 3. art. Honako hauek dira estatuaren oinarrizko xedeak: Espainiako gizakien arteko eta lurren arteko batasunaren defentsa; Nazioaren osotasuna, independentzia eta segurtasuna mantentzea (…). Hori guztia Mugimendu Nazionalaren Printzipioen inspirazioarekin eta haiekiko leialtasun zorrotzenarekin (…) printzipio hoiek, beren izaeragatik beragatik, iraunkorrak eta aldaezinak baitira. 6. art. Estatuburua nazioaren ordezkari gorena da; nazio-subiranotasuna pertsonifikatzen du; botere politiko eta administratibo gorena erabiltzen du; Mugimenduaren Buruzagitza Nazionala du, eta Mugimenduaren eta Erresumako gainerako Funtsezko Legeen printzipioak zorrotz betetzen direla zaintzen du (…); legeak promulgatu eta berresten ditu (…); lurreko, itsasoko eta aireko armaden gaineko aginte gorena du; (…); haren izenean administratzen da justizia; grazia- eskubidea erabiltzen du; enpleguak, kargu publikoak eta ohoreak ematen ditu, legeek xedatutakoaren arabera; ordezkari diplomatikoak akreditatu eta hartzen ditu, eta Erresumako Funtsezko Legeen arabera dagozkion ekintza guztiak egiten ditu (...) 14. art. Gobernuburuak espainiarra izan behar du eta estatuburuak izendatuko du Erresumako Kontseiluak proposatutako hirukote batetik hautatuta. Boletín Oficial del Estado, 1967-01-11"
+    "body": "Orain arte promulgatutako legeek erakunde-antolamenduek behar duten gai gehienak hartzen dituzte (…). Iritsi da Estatu nazionalaren erakundetzea burutzeko une egokia (…). Horren kariaz, (…), honako hau xedatzen dut: 1. art. 1. Espainiar estatua, erresuma gisa eratua, erkidego nazionalaren erakunde gorena da. 2. art. 1. Subiranotasun nazionala bakarra eta zatiezina da, eta ezin da ez ordezkatu ez laga. II. Espainiar estatuaren erakunde-sistema botere-batasunaren eta funtzio-koordinazioaren printzipioetan oinarritzen da. 3. art. Honako hauek dira Estatuaren oinarrizko xedeak: Espainiako gizakien arteko eta lurren arteko batasunaren defentsa; Nazioaren osotasuna, independentzia eta segurtasuna mantentzea (…). Hori guztia Mugimendu Nazionalaren Printzipioen inspirazioarekin eta haiekiko leialtasun zorrotzenarekin (…), printzipio horiek, beren izaeragatik beragatik, iraunkorrak eta aldaezinak baitira. 6. art. Estatuburua nazioaren ordezkari gorena da; nazio-subiranotasuna pertsonifikatzen du; botere politiko eta administratibo gorena erabiltzen du; Mugimenduaren Buruzagitza Nazionala du, eta Mugimenduaren eta Erresumako gainerako Funtsezko Legeen printzipioak zorrotz betetzen direla zaintzen du (…); legeak promulgatu eta berresten ditu (…); lurreko, itsasoko eta aireko armaden gaineko aginte gorena du; (…); haren izenean administratzen da justizia; grazia-eskubidea erabiltzen du; enpleguak, kargu publikoak eta ohoreak ematen ditu, legeek xedatutakoaren arabera; ordezkari diplomatikoak akreditatu eta hartzen ditu, eta Erresumako Funtsezko Legeen arabera dagozkion guztiak egiten ditu (...) 14. art. 1. Gobernuburuak espainiarra izan behar du, eta estatuburuak izendatuko du Erresumako Kontseiluak proposatutako hirukote batetik hautatuta. Boletín Oficial del Estado, 1967-01-11"
   },
   {
     "id": "text-21",
@@ -1369,6 +1369,96 @@ export const trapRules = [
     ],
     "priority": 4,
     "reason": "Iturri instituzionalaren izaera aldatzen du."
+  },
+  {
+    "id": "rule-119",
+    "correct": "Erkalaren (Errepublikaren)",
+    "wrongOptions": [
+      "Monarkiaren",
+      "Estatuaren"
+    ],
+    "priority": 5,
+    "reason": "1936ko Estatutuaren testuinguru errepublikarra aldatzen du."
+  },
+  {
+    "id": "rule-120",
+    "correct": "Araba, Gipuzkoa eta Bizkaya",
+    "wrongOptions": [
+      "Nafarroa, Gipuzkoa eta Bizkaya",
+      "Araba, Nafarroa eta Bizkaya"
+    ],
+    "priority": 5,
+    "reason": "1936ko Estatutuaren lurralde-osaketa nahasten du."
+  },
+  {
+    "id": "rule-121",
+    "correct": "Euzkera",
+    "wrongOptions": [
+      "Gaztelera",
+      "Frantsesa"
+    ],
+    "priority": 5,
+    "reason": "Hizkuntza propioaren aipamena aldatzen du."
+  },
+  {
+    "id": "rule-122",
+    "correct": "Euzkadi'ko laterri-izkera (hizkuntza ofiziala)",
+    "wrongOptions": [
+      "Espainiako laterri-izkera",
+      "hizkuntza debekatua"
+    ],
+    "priority": 5,
+    "reason": "Hizkuntza ofizialaren formula nahasten du."
+  },
+  {
+    "id": "rule-123",
+    "correct": "Bizkaya'ko Jaurlaria",
+    "wrongOptions": [
+      "Arabako Jaurlaria",
+      "Nafarroako Jaurlaria"
+    ],
+    "priority": 5,
+    "reason": "Behin-behineko lehendakaria hautatzeko prozedurako erakundea nahasten du."
+  },
+  {
+    "id": "rule-124",
+    "correct": "España laterriaren (estatuaren)",
+    "wrongOptions": [
+      "Frantzia laterriaren",
+      "Monarkiaren"
+    ],
+    "priority": 4,
+    "reason": "Autonomia zer estaturen barruan kokatzen den aldatzen du."
+  },
+  {
+    "id": "rule-125",
+    "correct": "auteskunde orokar (orokor), zuzen eta ixilen",
+    "wrongOptions": [
+      "auteskunde zentsitario, zeharkako eta agerikoen",
+      "izendapen militar eta sekretuen"
+    ],
+    "priority": 5,
+    "reason": "Ordezkaritza demokratikoaren formula aldatzen du."
+  },
+  {
+    "id": "rule-126",
+    "correct": "Bitarteko (Behin-behineko) Jaurlaritza",
+    "wrongOptions": [
+      "Gorte Nagusiak",
+      "Gobernu militarra"
+    ],
+    "priority": 5,
+    "reason": "Gerra-testuinguruko gobernu-formula nahasten du."
+  },
+  {
+    "id": "rule-127",
+    "correct": "Lendakariaren",
+    "wrongOptions": [
+      "Erregearen",
+      "Apezpikuaren"
+    ],
+    "priority": 4,
+    "reason": "Autonomia-erakundeko kargua beste figura batekin ordezkatzen du."
   }
 ] satisfies TrapRule[];
 

@@ -448,7 +448,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 pt-6 pb-32 md:px-8 md:pt-8 md:pb-8 xl:pb-8">
       <header className="glass-panel grid gap-6 rounded-3xl p-6 md:grid-cols-[1fr_auto] md:items-center">
         <div>
           <p className="text-sm font-bold uppercase tracking-widest text-emerald-700/80">Historia USaP Trainer</p>
@@ -692,6 +692,7 @@ export default function Home() {
               )}
             </div>
             <button
+              id="akats-submit-btn"
               className="mt-6 w-full rounded-xl bg-teal-600 px-5 py-4 font-black text-white shadow-md shadow-teal-900/20 transition-all hover:bg-teal-500 hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none disabled:text-slate-500"
               onClick={() => void finishAkats()}
               disabled={selectedPieces.length !== 5}
@@ -942,6 +943,7 @@ export default function Home() {
               ))}
             </div>
             <button
+              id="sele-submit-btn"
               className="focus-ring mt-8 rounded-xl bg-rose-600 px-8 py-4 text-lg font-black text-white shadow-md shadow-rose-900/20 transition-all hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-300"
               onClick={() => void finishSele()}
               disabled={selectedPieces.length !== 5}
@@ -994,8 +996,8 @@ export default function Home() {
                 if (section === 'akatsak') {
                   void finishAkats();
                 } else {
-                  // Scroll directly to the "Simulakroa zuzendu" button
-                  const submitBtn = document.querySelector('button[class*="bg-rose-600"]');
+                  // Scroll directly to the "Simulakroa zuzendu" button using robust ID
+                  const submitBtn = document.getElementById('sele-submit-btn');
                   if (submitBtn) {
                     submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   } else {
