@@ -1,4 +1,4 @@
-const CACHE_NAME = 'historia-usap-cache-v1';
+const CACHE_NAME = 'historia-usap-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.webmanifest',
@@ -40,6 +40,19 @@ self.addEventListener('fetch', (event) => {
 
   // Skip supabase or other external api calls
   if (event.request.url.includes('/rest/v1/') || event.request.url.includes('/auth/v1/')) {
+    return;
+  }
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          const copy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/', copy));
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request).then((cachedResponse) => cachedResponse || caches.match('/')))
+    );
     return;
   }
 

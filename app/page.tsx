@@ -125,7 +125,7 @@ export default function Home() {
           await openProfile(rememberedUsername, { quiet: true, mode: 'auto' });
         }
       } catch (error) {
-        if (active) setMessage(error instanceof Error ? error.message : 'Ezin izan da hasieratu.');
+        if (active) setMessage(readErrorMessage(error, 'Ezin izan da hasieratu.'));
       } finally {
         if (active) setBooting(false);
       }
@@ -174,7 +174,7 @@ export default function Home() {
         );
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Ezin izan da erabiltzailea ireki.');
+      setMessage(readErrorMessage(error, 'Ezin izan da erabiltzailea ireki.'));
     } finally {
       setLoginBusy(false);
     }
@@ -210,7 +210,7 @@ export default function Home() {
     try {
       await saveProgress(profile, nextProgress);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Aurrerapena ezin izan da gorde.');
+      setMessage(readErrorMessage(error, 'Aurrerapena ezin izan da gorde.'));
     }
   }
 
@@ -338,7 +338,7 @@ export default function Home() {
     } catch (error) {
       setTutor({
         title,
-        text: error instanceof Error ? error.message : 'Tutorea ezin izan da kargatu. Begiratu GEMINI_API_KEY.'
+        text: readErrorMessage(error, 'Tutorea ezin izan da kargatu. Begiratu GEMINI_API_KEY.')
       });
     } finally {
       setTutorBusy(false);
@@ -396,7 +396,7 @@ export default function Home() {
       setSeleDone(false);
       setMessage('Babeskopia kargatu da eta aurrerapena batu da.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Babeskopia ezin izan da kargatu.');
+      setMessage(readErrorMessage(error, 'Babeskopia ezin izan da kargatu.'));
     } finally {
       event.target.value = '';
     }
@@ -1900,6 +1900,21 @@ function progressTypeLabel(type: ProgressItem['itemType']): string {
   if (type === 'event') return 'Gertakaria';
   if (type === 'akats-set') return 'A1 eredua';
   return 'Sorta';
+}
+
+function readErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string' && error.trim()) return error;
+  if (error && typeof error === 'object') {
+    const data = error as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown };
+    const parts = [data.message, data.details, data.hint]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+    if (parts.length) {
+      const code = typeof data.code === 'string' && data.code.trim() ? ` (${data.code})` : '';
+      return `${parts.join(' ')}${code}`;
+    }
+  }
+  return fallback;
 }
 
 function formatDueDate(dueStr: string, now: number): string {
