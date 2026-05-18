@@ -254,7 +254,7 @@ function sanitizeProgress(progress: Record<string, ProgressItem>): Record<string
   const output: Record<string, ProgressItem> = {};
   for (const [key, item] of Object.entries(progress)) {
     if (!item || item.itemId !== key) continue;
-    if (!['trap', 'event', 'ordering-set'].includes(item.itemType)) continue;
+    if (!['trap', 'event', 'ordering-set', 'akats-set'].includes(item.itemType)) continue;
     output[key] = {
       itemId: item.itemId,
       itemType: item.itemType,

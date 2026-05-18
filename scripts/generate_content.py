@@ -95,9 +95,12 @@ RULES = [
     ("askatasunaren", ["tiraniaren", "diktaduraren"], 5, "Kontzeptu politiko kontrajarriak nahasten dituzte."),
     ("askatasuna", ["tirania", "diktadura"], 5, "Kontzeptu politiko kontrajarriak nahasten dituzte."),
     ("Monarkiaren", ["Errepublikaren"], 5, "Erregimen politikoaren aldaketa klasikoa da."),
+    ("monarkiaren", ["Errepublikaren", "diktaduraren"], 5, "Clara Campoamorren testuan erregimen politikoen kontrastea da gakoa."),
     ("monarkia", ["errepublika", "diktadura"], 5, "Estatu-forma nahasteko aukera handia du."),
     ("Errepublika", ["Monarkia", "Diktadura"], 5, "Erregimen politikoaren aldaketa klasikoa da."),
     ("Errepublikako", ["Monarkiako"], 5, "Testuinguru politikoa aldatzen du."),
+    ("Errepublikaren", ["Monarkiaren", "Diktaduraren"], 5, "Iturriaren eta testuinguru politikoaren erregimena aldatzen du."),
+    ("monarkiaren menpe", ["Errepublikaren menpe", "diktaduraren menpe"], 5, "2025eko ereduko akatsaren antzekoa da: aurreko erregimenaren erreferentzia aldatzen du."),
     ("lehen", ["azken"], 5, "Ordena historikoa alderantzikatzen du."),
     ("azken", ["lehen"], 4, "Ordena historikoa alderantzikatzen du."),
     ("Espainia", ["Frantzia", "Italia"], 5, "Herrialde historikoa ordezkatzen da."),
@@ -161,6 +164,7 @@ RULES = [
     ("Zuzenbidean", ["Medikuntzan", "Elizan"], 4, "Emakumearen gaitasun juridiko-politikoa nahasten du."),
     ("latindar", ["germaniar", "anglosaxoi"], 4, "Campoamorren argudio geopolitikoa aldatzen du."),
     ("ganbera", ["elizbarruti", "udal"], 4, "Instituzio politikoa beste eremu batekin nahasten du."),
+    ("Gorte Konstituziogileen", ["Gorte Arrunten", "Gorte Frankisten"], 4, "Iturri instituzionalaren izaera aldatzen du."),
     ("1933ko azaroaz", ["1934ko urriaz", "1936ko uztailaz"], 5, "Fronte Popularraren amnistiaren erreferentzia kronologikoa nahasten du."),
     ("delitu politiko eta sozialen", ["delitu militarren", "delitu ekonomikoen"], 5, "Amnistiaren izaera aldatzen du."),
     ("Estatu errepublikanoaren", ["Estatu monarkikoaren", "Estatu frankistaren"], 5, "Fronte Popularraren testuinguru politikoa aldatzen du."),
@@ -316,6 +320,8 @@ EVENTS = [
     ("1981", "Kontzertu Ekonomikoa sinatzea", "Autonomia", 5),
     ("1981-02-23", "23-F estatu-kolpe saiakera", "Trantsizioa", 5),
     ("1982-10", "Felipe Gonzalezen gobernu aldaketa", "Trantsizioa", 4),
+    ("1909-07", "Afrikako Gerra", "Berrezarkuntza", 5),
+    ("1931-04-14", "Alfontso XIII.aren erbesteratzea", "II. Errepublika", 5),
 ]
 
 

@@ -21,8 +21,52 @@ export const OFFICIAL_ORDERING_SCORE_BY_RUN: Record<number, number> = {
   3: 0.5,
   2: 0.25
 };
+type SeleAkatsSet = {
+  id: string;
+  textId: string;
+  title: string;
+  corrects: string[];
+  wrongs?: Record<string, string>;
+  priority: number;
+};
 
 export const seleOrderingSets: OrderingSet[] = [
+  {
+    id: 'sele-set-051',
+    title: 'EHU eredua: mende luzeko jauziak',
+    eventIds: ['event-008', 'event-108', 'event-044', 'event-109', 'event-093'],
+    priority: 20
+  },
+  {
+    id: 'sele-set-052',
+    title: 'EHU eredua: konstituzioak eta erregimenak',
+    eventIds: ['event-008', 'event-029', 'event-049', 'event-100', 'event-103'],
+    priority: 19
+  },
+  {
+    id: 'sele-set-053',
+    title: 'EHU eredua: foruak eta autonomia',
+    eventIds: ['event-014', 'event-030', 'event-031', 'event-061', 'event-103'],
+    priority: 19
+  },
+  {
+    id: 'sele-set-054',
+    title: 'EHU eredua: Errepublika-Gerra-Trantsizioa',
+    eventIds: ['event-048', 'event-057', 'event-058', 'event-071', 'event-098'],
+    priority: 18
+  },
+  {
+    id: 'sele-set-055',
+    title: 'EHU eredua: euskal mugarriak',
+    eventIds: ['event-038', 'event-061', 'event-067', 'event-092', 'event-102'],
+    priority: 18
+  },
+  {
+    id: 'sele-set-056',
+    title: 'EHU eredua: frankismoaren amaiera',
+    eventIds: ['event-080', 'event-082', 'event-084', 'event-091', 'event-093'],
+    priority: 18
+  },
   {
     id: 'sele-set-001',
     title: 'Sele kronologia orokorra I',
@@ -325,7 +369,35 @@ export const seleOrderingSets: OrderingSet[] = [
   }
 ];
 
-export const seleAkatsSets = [
+export const seleAkatsSets: SeleAkatsSet[] = [
+  {
+    id: 'sele-akats-13-ofiziala-2025',
+    textId: 'text-13',
+    title: '2025 ofiziala: Clara Campoamor',
+    corrects: ['askatasunaren', 'Errepublika', 'monarkiaren', 'lehen', 'Espainia'],
+    wrongs: {
+      askatasunaren: 'tiraniaren',
+      Errepublika: 'Monarkia',
+      monarkiaren: 'Errepublikaren',
+      lehen: 'azken',
+      Espainia: 'Frantzia'
+    },
+    priority: 20
+  },
+  {
+    id: 'sele-akats-16-ofiziala-2025',
+    textId: 'text-16',
+    title: '2025 ofiziala: Kontzertu ekonomikoak',
+    corrects: ['txikiagoagatik', 'Gipuzkoan eta Bizkaian', 'uztailaren', 'Arabako', 'Francisco Franco'],
+    wrongs: {
+      txikiagoagatik: 'handiagoagatik',
+      'Gipuzkoan eta Bizkaian': 'Gipuzkoan eta Araban',
+      uztailaren: 'maiatzaren',
+      Arabako: 'Bizkaiko',
+      'Francisco Franco': 'Francisco Azaña'
+    },
+    priority: 20
+  },
   {
     id: 'sele-akats-13-a',
     textId: 'text-13',
@@ -487,7 +559,7 @@ export const seleAkatsSets = [
     corrects: ['Euskara', 'hizkuntza ofiziala', 'Polizia autonomoaren', 'Estatuko Segurtasun Indar eta Gorputzak', 'autonomia'],
     priority: 10
   }
-] satisfies Array<{ id: string; textId: string; title: string; corrects: string[]; priority: number }>;
+];
 
 export function normalizeAnswer(value: string): string {
   return value
@@ -538,6 +610,20 @@ function weightedPick<T extends { id: string; priority: number }>(
   return pool[pool.length - 1];
 }
 
+function deterministicDuePick<T extends { id: string; priority: number }>(
+  items: T[],
+  progress: Record<string, ProgressItem>,
+  usedIds: Set<string>
+): T | null {
+  return [...items]
+    .filter((item) => !usedIds.has(item.id))
+    .sort((a, b) => {
+      const aWeight = a.priority * progressWeight(a.id, progress);
+      const bWeight = b.priority * progressWeight(b.id, progress);
+      return bWeight - aWeight || b.priority - a.priority || a.id.localeCompare(b.id);
+    })[0] ?? null;
+}
+
 export function getTrapCandidates(text: TextSource): TrapCandidate[] {
   return trapRules
     .filter((rule) => isOfficialA1Candidate(rule.correct) && Boolean(findWholePhrase(text.body, rule.correct)))
@@ -586,20 +672,83 @@ export function createAkatsExercise(progress: Record<string, ProgressItem> = {})
 }
 
 export function createSeleAkatsExercise(progress: Record<string, ProgressItem> = {}): AkatsExercise {
+  const personal = createPersonalAkatsReview(progress);
   const pool = seleAkatsSets
     .map((set) => {
       const text = texts.find((item) => item.id === set.textId);
       if (!text) return null;
       const candidates = set.corrects
-        .map((correct) => getTrapCandidates(text).find((candidate) => candidate.correct === correct))
+        .map((correct) => fixedSeleCandidate(text, set, correct))
         .filter((candidate): candidate is TrapCandidate => Boolean(candidate));
       return candidates.length === 5 && countPositionableFromCandidates(text, candidates) >= 5
         ? { ...set, text, candidates }
         : null;
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const picked = weightedPick(pool, progress, new Set()) ?? pool[0];
-  return buildAkatsExercise(picked.text, picked.candidates, progress, picked.id);
+  const picked = deterministicDuePick(pool, progress, new Set()) ?? pool[0];
+  if (personal && shouldUsePersonalAkatsReview(personal, picked.id, progress)) return personal;
+  return buildFixedAkatsExercise(picked.text, picked.candidates, picked.id);
+}
+
+function createPersonalAkatsReview(progress: Record<string, ProgressItem>): AkatsExercise | null {
+  const trapProgressCount = Object.values(progress).filter((item) => item.itemType === 'trap').length;
+  if (trapProgressCount < 5) return null;
+
+  const candidatesByText = examTexts()
+    .map((text) => {
+      const candidates = getTrapCandidates(text)
+        .map((candidate) => {
+          const item = progress[candidate.id];
+          const mastery = item?.mastery ?? 0;
+          const due = !item || isDue(item);
+          return { candidate: withDeterministicWrong(candidate, item), mastery, due, weight: candidate.priority * progressWeight(candidate.id, progress) };
+        })
+        .filter((item) => item.due && item.mastery < 0.72)
+        .sort((a, b) => b.weight - a.weight)
+        .map((item) => item.candidate);
+      return { text, candidates, score: candidates.reduce((sum, candidate) => sum + candidate.priority * progressWeight(candidate.id, progress), 0) };
+    })
+    .filter((item) => countPositionableFromCandidates(item.text, item.candidates) >= 5)
+    .sort((a, b) => b.score - a.score);
+
+  const picked = candidatesByText[0];
+  if (!picked) return null;
+  return buildFixedAkatsExercise(picked.text, picked.candidates, `sele-akats-pertsonala:${picked.text.id}`);
+}
+
+function shouldUsePersonalAkatsReview(
+  personal: AkatsExercise,
+  fixedSetId: string,
+  progress: Record<string, ProgressItem>
+): boolean {
+  const personalSet = progress[personal.id];
+  if (personalSet && !isDue(personalSet)) return false;
+  const fixedMastery = progress[fixedSetId]?.mastery ?? 0;
+  const weakCount = personal.traps.filter((trap) => (progress[trap.id]?.mastery ?? 0) < 0.65).length;
+  return weakCount >= 5 && (fixedMastery >= 0.25 || Object.values(progress).filter((item) => item.itemType === 'trap').length >= 10);
+}
+
+function withDeterministicWrong(candidate: TrapCandidate, item?: ProgressItem): TrapCandidate {
+  const rule = trapRules.find((entry) => entry.id === candidate.ruleId);
+  if (!rule?.wrongOptions.length) return candidate;
+  const mastery = item?.mastery ?? 0;
+  const index = Math.min(rule.wrongOptions.length - 1, Math.max(0, Math.floor((1 - mastery) * rule.wrongOptions.length)));
+  return { ...candidate, wrong: rule.wrongOptions[index] };
+}
+
+function fixedSeleCandidate(text: TextSource, set: SeleAkatsSet, correct: string): TrapCandidate | null {
+  const rule = trapRules.find((item) => item.correct === correct);
+  if (!rule || !isOfficialA1Candidate(rule.correct) || !findWholePhrase(text.body, rule.correct)) return null;
+  return {
+    id: `${text.id}:${rule.id}`,
+    textId: text.id,
+    ruleId: rule.id,
+    correct: rule.correct,
+    wrong: set.wrongs?.[correct] ?? rule.wrongOptions[0],
+    priority: rule.priority,
+    reason: rule.reason,
+    category: categorizeTrap(rule.correct, rule.reason)
+  };
 }
 
 function buildAkatsExercise(
@@ -630,6 +779,20 @@ function buildAkatsExercise(
     }
   }
 
+  return buildExerciseFromTraps(text, traps, id);
+}
+
+function buildFixedAkatsExercise(text: TextSource, candidates: TrapCandidate[], id: string): AkatsExercise {
+  const traps: MutatedTrap[] = [];
+  for (const candidate of candidates) {
+    if (traps.length >= 5) break;
+    const positioned = positionCandidate(text, candidate, traps);
+    if (positioned) traps.push(positioned);
+  }
+  return buildExerciseFromTraps(text, traps, id);
+}
+
+function buildExerciseFromTraps(text: TextSource, traps: MutatedTrap[], id: string): AkatsExercise {
   const forward = [...traps].sort((a, b) => a.start - b.start);
   let cursor = 0;
   let mutatedBody = '';
@@ -696,8 +859,39 @@ export function createOrderingExercise(progress: Record<string, ProgressItem> = 
 }
 
 export function createSeleOrderingExercise(progress: Record<string, ProgressItem> = {}): OrderingExercise {
-  const set = weightedPick(seleOrderingSets, progress, new Set()) ?? seleOrderingSets[0];
+  const personal = createPersonalOrderingReview(progress);
+  const set = deterministicDuePick(seleOrderingSets, progress, new Set()) ?? seleOrderingSets[0];
+  if (personal && shouldUsePersonalOrderingReview(personal, set.id, progress)) return personal;
   return buildOrderingExercise(set);
+}
+
+function createPersonalOrderingReview(progress: Record<string, ProgressItem>): OrderingExercise | null {
+  const eventProgressCount = Object.values(progress).filter((item) => item.itemType === 'event').length;
+  if (eventProgressCount < 5) return null;
+  const weakEvents = examOrderingEvents()
+    .map((event) => ({ event, item: progress[event.id], weight: event.priority * progressWeight(event.id, progress) }))
+    .filter(({ item }) => item && isDue(item) && item.mastery < 0.72)
+    .sort((a, b) => b.weight - a.weight)
+    .map(({ event }) => event);
+  if (weakEvents.length < 5) return null;
+  const selected = weakEvents.slice(0, 5).sort(compareEvents);
+  return {
+    id: 'sele-order-pertsonala',
+    title: 'Zure akatsetatik sortua',
+    events: shuffle(selected)
+  };
+}
+
+function shouldUsePersonalOrderingReview(
+  personal: OrderingExercise,
+  fixedSetId: string,
+  progress: Record<string, ProgressItem>
+): boolean {
+  const personalSet = progress[personal.id];
+  if (personalSet && !isDue(personalSet)) return false;
+  const fixedMastery = progress[fixedSetId]?.mastery ?? 0;
+  const weakCount = personal.events.filter((event) => (progress[event.id]?.mastery ?? 0) < 0.65).length;
+  return weakCount >= 5 && (fixedMastery >= 0.25 || Object.values(progress).filter((item) => item.itemType === 'event').length >= 10);
 }
 
 function buildOrderingExercise(set: (typeof orderingSets)[number]): OrderingExercise {

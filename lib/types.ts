@@ -79,7 +79,7 @@ export type OrderingExercise = {
 
 export type ProgressItem = {
   itemId: string;
-  itemType: 'trap' | 'event' | 'ordering-set';
+  itemType: 'trap' | 'event' | 'ordering-set' | 'akats-set';
   mastery: number;
   streak: number;
   ease: number;

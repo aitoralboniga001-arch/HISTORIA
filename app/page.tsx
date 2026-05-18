@@ -35,7 +35,6 @@ import {
   createOrderingExercise,
   createSeleAkatsExercise,
   createSeleOrderingExercise,
-  findWholePhrase,
   categoryLabel,
   examTexts,
   examOrderingEvents,
@@ -55,15 +54,19 @@ import {
   importProgressBackup,
   isSupabaseConfigured,
   loadProgress,
+  loadAttempts,
   requestPersistentStorage,
   saveAttempt,
   saveProgress
 } from '@/lib/progress';
-import type { AkatsExercise, AkatsResult, HistoryEvent, OrderingExercise, ProgressItem, TextSource } from '@/lib/types';
+import type { AkatsExercise, AkatsResult, HistoryEvent, OrderingExercise, ProgressItem, TextSource, TrapCandidate } from '@/lib/types';
+import type { LocalAttempt } from '@/lib/progress';
 
 type Section = 'home' | 'testuak' | 'akatsak' | 'gertakariak' | 'ordenatu' | 'sele' | 'emaitzak';
 type Profile = Awaited<ReturnType<typeof getOrCreateProfile>>;
 type Selection = { id: string; label: string; trapId?: string };
+type StudyMark = TrapCandidate & { start: number; end: number; progressId: string; occurrence: number };
+type TutorState = { title: string; text: string } | null;
 
 export default function Home() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -82,6 +85,8 @@ export default function Home() {
   const [loginBusy, setLoginBusy] = useState(false);
   const [storagePersisted, setStoragePersisted] = useState<boolean | null>(null);
   const [message, setMessage] = useState('');
+  const [tutor, setTutor] = useState<TutorState>(null);
+  const [tutorBusy, setTutorBusy] = useState(false);
   const [now, setNow] = useState(0);
   const backupInputRef = useRef<HTMLInputElement>(null);
 
@@ -294,12 +299,36 @@ export default function Home() {
         itemType: 'trap' as const,
         quality: detail.corrected ? 1 : detail.identified ? 0.55 : 0
       })),
+      { itemId: akats.id, itemType: 'akats-set' as const, quality: akatsScore.total / 2 },
       { itemId: ordering.id, itemType: 'ordering-set' as const, quality: orderScore },
       ...orderingProgressUpdates(ordering.events)
     ]);
     await persist(nextProgress);
     await saveAttempt({ profile, type: 'akatsak', score: akatsScore.total, maxScore: 2, detail: { mode: 'sele', result: akatsScore } });
     await saveAttempt({ profile, type: 'ordenatu', score: orderScore, maxScore: 1, detail: { mode: 'sele', eventIds: ordering.events.map((event) => event.id), score: orderScore } });
+  }
+
+  async function askTutor(title: string, kind: 'akatsak' | 'ordenatu' | 'summary', payload: unknown) {
+    setTutorBusy(true);
+    setTutor({ title, text: 'Gemma 4 pentsatzen ari da...' });
+    try {
+      const endpoint = process.env.NEXT_PUBLIC_TUTOR_API_URL ?? '/api/tutor';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind, payload })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error ?? 'Tutorea ezin izan da kargatu.');
+      setTutor({ title, text: data.text ?? 'Ez dago azalpenik.' });
+    } catch (error) {
+      setTutor({
+        title,
+        text: error instanceof Error ? error.message : 'Tutorea ezin izan da kargatu. Begiratu GEMINI_API_KEY.'
+      });
+    } finally {
+      setTutorBusy(false);
+    }
   }
 
   function moveEvent(from: number, to: number) {
@@ -669,7 +698,13 @@ export default function Home() {
             >
               Zuzendu
             </button>
-            {akatsResult && <AkatsResultView result={akatsResult} selectedPieces={selectedPieces} />}
+            {akatsResult && (
+              <AkatsResultView
+                result={akatsResult}
+                selectedPieces={selectedPieces}
+                onTutor={() => void askTutor('A1 akatsen tutorea', 'akatsak', buildAkatsTutorPayload(akatsResult, selectedPieces))}
+              />
+            )}
           </aside>
         </section>
       )}
@@ -744,6 +779,13 @@ export default function Home() {
                   </li>
                 ))}
               </ol>
+              <button
+                className="mt-5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-black text-white transition hover:bg-teal-600 disabled:opacity-60"
+                disabled={tutorBusy}
+                onClick={() => void askTutor('Kronologiaren tutorea', 'ordenatu', buildOrderingTutorPayload(ordering, orderingResult))}
+              >
+                Gemma 4: azaldu eta eman mnemoteknia
+              </button>
             </div>
           )}
         </section>
@@ -856,7 +898,13 @@ export default function Home() {
                   </ul>
                 )}
               </div>
-              {akatsResult && <AkatsResultView result={akatsResult} selectedPieces={selectedPieces} />}
+              {akatsResult && (
+                <AkatsResultView
+                  result={akatsResult}
+                  selectedPieces={selectedPieces}
+                  onTutor={() => void askTutor('A1 akatsen tutorea', 'akatsak', buildAkatsTutorPayload(akatsResult, selectedPieces))}
+                />
+              )}
             </aside>
           </section>
 
@@ -910,13 +958,28 @@ export default function Home() {
                     </li>
                   ))}
                 </ol>
+                <button
+                  className="mt-5 rounded-xl bg-teal-700 px-4 py-3 text-sm font-black text-white transition hover:bg-teal-600 disabled:opacity-60"
+                  disabled={tutorBusy}
+                  onClick={() => void askTutor('A2 kronologiaren tutorea', 'ordenatu', buildOrderingTutorPayload(ordering, orderingResult))}
+                >
+                  Gemma 4: azaldu ordena + trikimailua
+                </button>
               </div>
             )}
           </section>
         </section>
       )}
 
-      {section === 'emaitzak' && <Results progress={progress} now={now} />}
+      {tutor && <TutorPanel tutor={tutor} busy={tutorBusy} onClose={() => setTutor(null)} />}
+
+      {section === 'emaitzak' && (
+        <Results
+          progress={progress}
+          now={now}
+          onTutor={(title, payload) => void askTutor(title, 'summary', payload)}
+        />
+      )}
 
       {/* Floating Mobile Sticky Bar for quick progress & evaluation */}
       {selectedPieces.length > 0 && (section === 'akatsak' || section === 'sele') && (
@@ -1160,13 +1223,14 @@ function TrainingDashboard({
 function TextStudy({ text, progress }: { text: TextSource; progress: Record<string, ProgressItem> }) {
   const [showMarks, setShowMarks] = useState(true);
   const [filter, setFilter] = useState<'all' | 'high' | 'weak'>('all');
-  const [activeMark, setActiveMark] = useState<ReturnType<typeof studyMarks>[number] | null>(null);
+  const [activeMark, setActiveMark] = useState<StudyMark | null>(null);
   const allMarks = useMemo(() => studyMarks(text), [text]);
   const marks = allMarks.filter((mark) => {
     if (filter === 'high') return mark.priority >= 5;
-    if (filter === 'weak') return (progress[mark.id]?.mastery ?? 0) < 0.5;
+    if (filter === 'weak') return (progress[mark.progressId]?.mastery ?? 0) < 0.5;
     return true;
   });
+  const uniqueMarks = marks.filter((mark, index, list) => list.findIndex((item) => item.progressId === mark.progressId) === index);
   const mastery = Math.round(textMastery(text, progress) * 100);
   return (
     <article className="glass-panel overflow-hidden rounded-3xl p-8">
@@ -1252,7 +1316,7 @@ function TextStudy({ text, progress }: { text: TextSource; progress: Record<stri
       )}
       {showMarks && (
         <div className="mt-6 grid gap-3 md:grid-cols-2">
-          {marks.slice(0, 10).map((mark) => (
+          {uniqueMarks.slice(0, 12).map((mark) => (
             <div key={mark.id} className="rounded-2xl border border-white/60 bg-white/50 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/80">
               <div className="flex items-center justify-between gap-3">
                 <strong className="text-slate-900 text-lg">{mark.correct}</strong>
@@ -1267,22 +1331,40 @@ function TextStudy({ text, progress }: { text: TextSource; progress: Record<stri
   );
 }
 
-function studyMarks(text: TextSource) {
-  const candidates = getTrapCandidates(text);
-  return candidates
-    .map((candidate) => {
-      const match = findWholePhrase(text.body, candidate.correct);
-      return match ? { ...candidate, start: match.start, end: match.end } : null;
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .sort((a, b) => a.start - b.start)
-    .filter((item, index, list) => index === 0 || item.start >= list[index - 1].end);
+function studyMarks(text: TextSource): StudyMark[] {
+  const positioned = getTrapCandidates(text).flatMap((candidate) =>
+    findAllWholePhrases(text.body, candidate.correct).map((match, occurrence) => ({
+      ...candidate,
+      id: `${candidate.id}:${match.start}`,
+      progressId: candidate.id,
+      start: match.start,
+      end: match.end,
+      occurrence
+    }))
+  );
+  const accepted: StudyMark[] = [];
+  positioned
+    .sort((a, b) => b.priority - a.priority || b.end - b.start - (a.end - a.start) || a.start - b.start)
+    .forEach((mark) => {
+      const overlaps = accepted.some((item) => mark.start < item.end && mark.end > item.start);
+      if (!overlaps) accepted.push(mark);
+    });
+  return accepted.sort((a, b) => a.start - b.start);
+}
+
+function findAllWholePhrases(text: string, phrase: string): Array<{ start: number; end: number }> {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'gu');
+  return Array.from(text.matchAll(regex), (match) => ({
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + phrase.length
+  }));
 }
 
 function renderMarkedText(
   body: string, 
-  marks: ReturnType<typeof studyMarks>,
-  onMarkClick: (mark: ReturnType<typeof studyMarks>[number]) => void
+  marks: StudyMark[],
+  onMarkClick: (mark: StudyMark) => void
 ) {
   const nodes: ReactNode[] = [];
   let cursor = 0;
@@ -1467,7 +1549,15 @@ function SelectablePiece({
   );
 }
 
-function AkatsResultView({ result, selectedPieces }: { result: AkatsResult; selectedPieces: Selection[] }) {
+function AkatsResultView({
+  result,
+  selectedPieces,
+  onTutor
+}: {
+  result: AkatsResult;
+  selectedPieces: Selection[];
+  onTutor: () => void;
+}) {
   const falseSelections = selectedPieces.filter((piece) => !piece.trapId);
   return (
     <div className="mt-6 rounded-2xl border border-teal-200/50 bg-teal-50/50 p-5 backdrop-blur-sm shadow-sm animate-fade-in">
@@ -1494,7 +1584,32 @@ function AkatsResultView({ result, selectedPieces }: { result: AkatsResult; sele
           <strong className="block mb-1 text-amber-800">Soberan hautatuta:</strong> {falseSelections.map((piece) => piece.label).join(', ')}
         </div>
       )}
+      <button
+        className="mt-4 w-full rounded-xl bg-teal-700 px-4 py-3 text-sm font-black text-white transition hover:bg-teal-600"
+        onClick={onTutor}
+      >
+        Gemma 4: azaldu nire akatsak + mnemotekniak
+      </button>
     </div>
+  );
+}
+
+function TutorPanel({ tutor, busy, onClose }: { tutor: NonNullable<TutorState>; busy: boolean; onClose: () => void }) {
+  return (
+    <section className="glass-panel rounded-3xl border border-violet-200/60 bg-violet-50/60 p-6 shadow-xl">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-black uppercase tracking-widest text-violet-700">Gemma 4 tutorea</p>
+          <h3 className="mt-1 text-2xl font-black text-slate-950">{tutor.title}</h3>
+        </div>
+        <button className="rounded-xl bg-white/80 px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:bg-white" onClick={onClose}>
+          Itxi
+        </button>
+      </div>
+      <p className={clsx('mt-4 whitespace-pre-line text-base font-semibold leading-relaxed text-slate-800', busy && 'animate-pulse')}>
+        {tutor.text}
+      </p>
+    </section>
   );
 }
 
@@ -1580,10 +1695,20 @@ function Timeline() {
   );
 }
 
-function Results({ progress, now }: { progress: Record<string, ProgressItem>; now: number }) {
+function Results({
+  progress,
+  now,
+  onTutor
+}: {
+  progress: Record<string, ProgressItem>;
+  now: number;
+  onTutor: (title: string, payload: unknown) => void;
+}) {
   const rows = Object.values(progress).sort((a, b) => a.dueAt.localeCompare(b.dueAt));
   const knownCandidates = examTexts().flatMap((text) => getTrapCandidates(text));
   const urgent = rows.filter((item) => new Date(item.dueAt).getTime() <= now).length;
+  const attempts = loadAttempts();
+  const errorNotes = buildErrorNotes(attempts).slice(0, 8);
   return (
     <section className="glass-panel rounded-3xl p-8">
       <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -1600,6 +1725,35 @@ function Results({ progress, now }: { progress: Record<string, ProgressItem>; no
           <Stat label="Itemak" value={rows.length} />
           <Stat label="Gaur" value={urgent} />
           <Stat label="Batez bestekoa" value={rows.length ? Math.round(rows.reduce((sum, item) => sum + item.mastery, 0) / rows.length * 100) : 0} suffix="%" />
+        </div>
+      </div>
+      <div className="mt-6 rounded-2xl border border-white/60 bg-white/45 p-5 shadow-sm backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-2xl font-black text-slate-900">Akatsen koadernoa</h3>
+            <p className="mt-1 text-sm font-bold text-slate-500">Azken hutsak, Gemma 4 tutorearekin azaltzeko eta trikimailuak ateratzeko.</p>
+          </div>
+          <button
+            className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-black text-white transition hover:bg-violet-600 disabled:opacity-50"
+            disabled={!errorNotes.length}
+            onClick={() => onTutor('Nire akatsen laburpena', { errors: errorNotes, weakProgress: rows.slice(0, 12) })}
+          >
+            Gemma 4: plan pertsonala
+          </button>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {errorNotes.map((note) => (
+            <div key={note.id} className="rounded-xl border border-white/70 bg-white/70 p-4 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-500">{note.type}</p>
+              <p className="mt-1 font-bold leading-relaxed text-slate-800">{note.label}</p>
+              <p className="mt-1 text-sm font-semibold text-rose-700">{note.problem}</p>
+            </div>
+          ))}
+          {!errorNotes.length && (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white/45 p-5 text-sm font-bold text-slate-500">
+              Oraindik ez dago huts nabarmenik. Egin simulakro bat eta hemen agertuko dira.
+            </div>
+          )}
         </div>
       </div>
       <div className="mt-6 overflow-hidden rounded-2xl border border-white/60 bg-white/40 shadow-sm backdrop-blur-md">
@@ -1648,6 +1802,65 @@ function Results({ progress, now }: { progress: Record<string, ProgressItem>; no
   );
 }
 
+function buildAkatsTutorPayload(result: AkatsResult, selectedPieces: Selection[]) {
+  return {
+    score: result.total,
+    selected: selectedPieces.map((piece) => piece.label),
+    details: result.details.map((detail) => ({
+      wrongShown: detail.trap.wrong,
+      correct: detail.trap.correct,
+      identified: detail.identified,
+      corrected: detail.corrected,
+      answer: detail.answer,
+      reason: detail.trap.reason
+    }))
+  };
+}
+
+function buildOrderingTutorPayload(ordering: OrderingExercise, score: number | null) {
+  return {
+    score,
+    submitted: ordering.events.map((event, index) => ({ index: index + 1, label: event.label, date: event.date })),
+    correct: [...ordering.events].sort(compareEvents).map((event, index) => ({ index: index + 1, label: event.label, date: event.date }))
+  };
+}
+
+function buildErrorNotes(attempts: LocalAttempt[]) {
+  return attempts.flatMap((attempt) => {
+    if (attempt.type === 'akatsak') return akatsAttemptErrors(attempt);
+    if (attempt.type === 'ordenatu') return orderingAttemptErrors(attempt);
+    return [];
+  });
+}
+
+function akatsAttemptErrors(attempt: LocalAttempt) {
+  const detail = attempt.detail as { result?: AkatsResult; details?: AkatsResult['details'] };
+  const details = detail.result?.details ?? detail.details ?? [];
+  return details
+    .filter((item) => !item.corrected)
+    .map((item, index) => ({
+      id: `${attempt.id}:akats:${index}`,
+      type: 'A1 akatsa',
+      label: `${item.trap.wrong} -> ${item.trap.correct}`,
+      problem: item.identified ? `Zuk idatzia: ${item.answer || 'hutsik'}` : 'Ez zenuen akatsa identifikatu'
+    }));
+}
+
+function orderingAttemptErrors(attempt: LocalAttempt) {
+  const detail = attempt.detail as { eventIds?: string[]; score?: number };
+  const submitted = detail.eventIds?.map((id) => events.find((event) => event.id === id)).filter((event): event is HistoryEvent => Boolean(event)) ?? [];
+  if (!submitted.length || (detail.score ?? attempt.score) >= 1) return [];
+  const correct = [...submitted].sort(compareEvents);
+  return [
+    {
+      id: `${attempt.id}:ordenatu`,
+      type: 'A2 kronologia',
+      label: submitted.map((event) => event.label).join(' / '),
+      problem: `Ordena zuzena: ${correct.map((event) => `${event.date} ${event.label}`).join(' -> ')}`
+    }
+  ];
+}
+
 function progressLabel(item: ProgressItem, candidates: ReturnType<typeof getTrapCandidates>): string {
   if (item.itemType === 'event') {
     return events.find((event) => event.id === item.itemId)?.label ?? item.itemId;
@@ -1662,6 +1875,7 @@ function progressLabel(item: ProgressItem, candidates: ReturnType<typeof getTrap
 function progressTypeLabel(type: ProgressItem['itemType']): string {
   if (type === 'trap') return 'Akatsa';
   if (type === 'event') return 'Gertakaria';
+  if (type === 'akats-set') return 'A1 eredua';
   return 'Sorta';
 }
 

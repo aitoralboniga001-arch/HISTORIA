@@ -86,10 +86,18 @@ describe('akatsak', () => {
     expect(exercise.traps).toHaveLength(5);
     expect(exercise.traps.every((trap) => trap.priority >= 4)).toBe(true);
     expect(seleAkatsSets.some((set) => set.id === exercise.id)).toBe(true);
+    expect(exercise.id).toBe('sele-akats-13-ofiziala-2025');
+    expect(Object.fromEntries(exercise.traps.map((trap) => [trap.correct, trap.wrong]))).toMatchObject({
+      askatasunaren: 'tiraniaren',
+      Errepublika: 'Monarkia',
+      monarkiaren: 'Errepublikaren',
+      lehen: 'azken',
+      Espainia: 'Frantzia'
+    });
   });
 
   it('has manually curated selectivity akats sets', () => {
-    expect(seleAkatsSets).toHaveLength(23);
+    expect(seleAkatsSets).toHaveLength(25);
     expect(seleAkatsSets.every((set) => set.corrects.length === 5)).toBe(true);
     expect(new Set(seleAkatsSets.map((set) => set.id)).size).toBe(seleAkatsSets.length);
   });
@@ -119,11 +127,12 @@ describe('ordenatu', () => {
     expect(exercise.events).toHaveLength(5);
     expect(exercise.events.every((event) => event.sortKey <= '1982-99-99')).toBe(true);
     expect(seleOrderingSets.some((set) => set.id === exercise.id)).toBe(true);
+    expect(exercise.id).toBe('sele-set-051');
   });
 
   it('has manually curated obvious selectivity ordering sets', () => {
     const officialIds = new Set(examOrderingEvents().map((event) => event.id));
-    expect(seleOrderingSets).toHaveLength(50);
+    expect(seleOrderingSets).toHaveLength(56);
     expect(seleOrderingSets.every((set) => set.eventIds.length === 5)).toBe(true);
     expect(seleOrderingSets.every((set) => set.eventIds.every((id) => officialIds.has(id)))).toBe(true);
     expect(seleOrderingSets.every((set) => set.priority >= 8)).toBe(true);

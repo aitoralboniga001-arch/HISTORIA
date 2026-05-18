@@ -10,7 +10,7 @@ create table if not exists public.profiles (
 create table if not exists public.item_progress (
   profile_id uuid not null references public.profiles(id) on delete cascade,
   item_id text not null,
-  item_type text not null check (item_type in ('trap', 'event', 'ordering-set')),
+  item_type text not null check (item_type in ('trap', 'event', 'ordering-set', 'akats-set')),
   mastery numeric not null default 0,
   streak integer not null default 0,
   ease numeric not null default 1.4,
@@ -28,6 +28,10 @@ create table if not exists public.attempts (
   detail jsonb not null,
   created_at timestamptz not null default now()
 );
+
+alter table public.item_progress drop constraint if exists item_progress_item_type_check;
+alter table public.item_progress
+  add constraint item_progress_item_type_check check (item_type in ('trap', 'event', 'ordering-set', 'akats-set'));
 
 alter table public.profiles enable row level security;
 alter table public.item_progress enable row level security;

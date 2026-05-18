@@ -1329,6 +1329,46 @@ export const trapRules = [
     ],
     "priority": 5,
     "reason": "Polizia-eskumenen banaketa nahasten du."
+  },
+  {
+    "id": "rule-115",
+    "correct": "monarkiaren",
+    "wrongOptions": [
+      "Errepublikaren",
+      "diktaduraren"
+    ],
+    "priority": 5,
+    "reason": "Clara Campoamorren testuan erregimen politikoen kontrastea da gakoa."
+  },
+  {
+    "id": "rule-116",
+    "correct": "Errepublikaren",
+    "wrongOptions": [
+      "Monarkiaren",
+      "Diktaduraren"
+    ],
+    "priority": 5,
+    "reason": "Iturriaren eta testuinguru politikoaren erregimena aldatzen du."
+  },
+  {
+    "id": "rule-117",
+    "correct": "monarkiaren menpe",
+    "wrongOptions": [
+      "Errepublikaren menpe",
+      "diktaduraren menpe"
+    ],
+    "priority": 5,
+    "reason": "2025eko ereduko akatsaren antzekoa da: aurreko erregimenaren erreferentzia aldatzen du."
+  },
+  {
+    "id": "rule-118",
+    "correct": "Gorte Konstituziogileen",
+    "wrongOptions": [
+      "Gorte Arrunten",
+      "Gorte Frankisten"
+    ],
+    "priority": 4,
+    "reason": "Iturri instituzionalaren izaera aldatzen du."
   }
 ] satisfies TrapRule[];
 
@@ -2188,6 +2228,22 @@ export const events = [
     "label": "Felipe Gonzalezen gobernu aldaketa",
     "theme": "Trantsizioa",
     "priority": 4
+  },
+  {
+    "id": "event-108",
+    "date": "1909",
+    "sortKey": "1909-07-00",
+    "label": "Afrikako Gerra",
+    "theme": "Berrezarkuntza",
+    "priority": 5
+  },
+  {
+    "id": "event-109",
+    "date": "1931-04-14",
+    "sortKey": "1931-04-14",
+    "label": "Alfontso XIII.aren erbesteratzea",
+    "theme": "II. Errepublika",
+    "priority": 5
   }
 ] satisfies HistoryEvent[];
 

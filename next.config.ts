@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  output: process.env.CAPACITOR_EXPORT === '1' ? 'export' : undefined,
   typedRoutes: true,
   images: {
     unoptimized: true

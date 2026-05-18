@@ -39,6 +39,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 Sin esas variables, la app funciona en modo local.
 
+## Gemma 4 tutorea
+
+El tutor usa Google AI Studio / Gemini API desde una ruta server de Next.js. La clave no se expone en el navegador.
+
+Variables recomendadas en Vercel:
+
+```bash
+GEMINI_API_KEY=
+GEMMA_MODEL=gemma-4-31b-it
+```
+
+Tambien se acepta `GOOGLE_AI_STUDIO_API_KEY`. Para la app Android/Capacitor, si quieres usar el tutor desde el movil, configura:
+
+```bash
+NEXT_PUBLIC_TUTOR_API_URL=https://tu-app.vercel.app/api/tutor
+```
+
 ## Desarrollo
 
 ```bash
@@ -48,14 +65,14 @@ npm run dev
 
 ## Vercel
 
-El proyecto usa `output: 'export'`, asi que `npm run build` genera la version estatica en `out/`.
+`npm run build` genera la app Next.js para Vercel con la ruta server del tutor Gemma 4.
 
 En Vercel:
 
 1. Sube este directorio a GitHub.
 2. Importa el repo en Vercel.
 3. Build command: `npm run build`.
-4. Anade en Project Settings las variables `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+4. Anade en Project Settings las variables `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y, si quieres tutor IA, `GEMINI_API_KEY`.
 
 ## Android / Capacitor
 
