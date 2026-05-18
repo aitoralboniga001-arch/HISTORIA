@@ -58,28 +58,75 @@ export function clearLastUsername(): void {
   window.localStorage.removeItem(LAST_USERNAME_KEY);
 }
 
-export async function getOrCreateProfile(username: string): Promise<Profile> {
+export async function getProfile(username: string): Promise<Profile> {
   const clean = normalizeUsername(username);
   if (!clean) throw new Error('Idatzi erabiltzaile-izena.');
-  if (typeof window !== 'undefined') window.localStorage.setItem(LAST_USERNAME_KEY, clean);
 
   const db = supabase();
-  if (!db) return { id: clean, username: clean, isLocal: true };
+  if (!db) {
+    rememberUsername(clean);
+    return { id: clean, username: clean, isLocal: true };
+  }
 
   const existing = await db.from('profiles').select('id, username').eq('username', clean).maybeSingle();
   if (existing.error) throw existing.error;
   if (existing.data) {
     await db.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', existing.data.id);
+    rememberUsername(clean);
     return { id: existing.data.id, username: existing.data.username, isLocal: false };
   }
+
+  throw new Error('Erabiltzailea ez da existitzen. Sakatu Sortu lehenengo.');
+}
+
+export async function createProfile(username: string): Promise<Profile> {
+  const clean = normalizeUsername(username);
+  if (!clean) throw new Error('Idatzi erabiltzaile-izena.');
+
+  const db = supabase();
+  if (!db) {
+    rememberUsername(clean);
+    return { id: clean, username: clean, isLocal: true };
+  }
+
+  const existing = await db.from('profiles').select('id').eq('username', clean).maybeSingle();
+  if (existing.error) throw existing.error;
+  if (existing.data) throw new Error('Izen hori badago. Sakatu Sartu.');
 
   const created = await db
     .from('profiles')
     .insert({ username: clean, last_seen_at: new Date().toISOString() })
     .select('id, username')
     .single();
-  if (created.error) throw created.error;
+  if (created.error) {
+    if ('code' in created.error && created.error.code === '23505') {
+      throw new Error('Izen hori badago. Sakatu Sartu.');
+    }
+    throw created.error;
+  }
+  rememberUsername(clean);
   return { id: created.data.id, username: created.data.username, isLocal: false };
+}
+
+export async function getOrCreateProfile(username: string): Promise<Profile> {
+  const clean = normalizeUsername(username);
+  if (!clean) throw new Error('Idatzi erabiltzaile-izena.');
+
+  const db = supabase();
+  if (!db) {
+    rememberUsername(clean);
+    return { id: clean, username: clean, isLocal: true };
+  }
+
+  const existing = await db.from('profiles').select('id, username').eq('username', clean).maybeSingle();
+  if (existing.error) throw existing.error;
+  if (existing.data) {
+    await db.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', existing.data.id);
+    rememberUsername(clean);
+    return { id: existing.data.id, username: existing.data.username, isLocal: false };
+  }
+
+  return createProfile(clean);
 }
 
 export async function requestPersistentStorage(): Promise<boolean | null> {
@@ -298,6 +345,11 @@ function readJson<T>(key: string): T | null {
 
 function normalizeUsername(value: string): string {
   return value.trim().replace(/\s+/g, '-').toLocaleLowerCase('eu').slice(0, 40);
+}
+
+function rememberUsername(username: string): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LAST_USERNAME_KEY, username);
 }
 
 function createId(): string {

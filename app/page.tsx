@@ -48,7 +48,9 @@ import {
 } from '@/lib/exercises';
 import {
   clearLastUsername,
+  createProfile,
   createProgressBackup,
+  getProfile,
   getLastUsername,
   getOrCreateProfile,
   importProgressBackup,
@@ -60,10 +62,10 @@ import {
   saveProgress
 } from '@/lib/progress';
 import type { AkatsExercise, AkatsResult, HistoryEvent, OrderingExercise, ProgressItem, TextSource, TrapCandidate } from '@/lib/types';
-import type { LocalAttempt } from '@/lib/progress';
+import type { LocalAttempt, Profile } from '@/lib/progress';
 
 type Section = 'home' | 'testuak' | 'akatsak' | 'gertakariak' | 'ordenatu' | 'sele' | 'emaitzak';
-type Profile = Awaited<ReturnType<typeof getOrCreateProfile>>;
+type ProfileOpenMode = 'auto' | 'login' | 'create';
 type Selection = { id: string; label: string; trapId?: string };
 type StudyMark = TrapCandidate & { start: number; end: number; progressId: string; occurrence: number };
 type TutorState = { title: string; text: string } | null;
@@ -120,7 +122,7 @@ export default function Home() {
         setUsername(rememberedUsername);
         setNow(Date.now());
         if (rememberedUsername) {
-          await openProfile(rememberedUsername, { quiet: true });
+          await openProfile(rememberedUsername, { quiet: true, mode: 'auto' });
         }
       } catch (error) {
         if (active) setMessage(error instanceof Error ? error.message : 'Ezin izan da hasieratu.');
@@ -135,7 +137,7 @@ export default function Home() {
     };
   }, []);
 
-  async function openProfile(nextUsername: string, options?: { quiet?: boolean }) {
+  async function openProfile(nextUsername: string, options?: { quiet?: boolean; mode?: ProfileOpenMode }) {
     if (!nextUsername.trim()) {
       setMessage('Idatzi erabiltzaile-izena.');
       return;
@@ -143,7 +145,13 @@ export default function Home() {
     setLoginBusy(true);
     if (!options?.quiet) setMessage('');
     try {
-      const nextProfile = await getOrCreateProfile(nextUsername);
+      const mode = options?.mode ?? 'auto';
+      const nextProfile =
+        mode === 'login'
+          ? await getProfile(nextUsername)
+          : mode === 'create'
+            ? await createProfile(nextUsername)
+            : await getOrCreateProfile(nextUsername);
       const loaded = await loadProgress(nextProfile);
       setProfile(nextProfile);
       setProgress(loaded);
@@ -160,7 +168,9 @@ export default function Home() {
         setMessage(
           nextProfile.isLocal
             ? 'Supabase ez dago konfiguratuta: aurrerapena gailu honetan gordeko da.'
-            : 'Aurrerapena Supabase-rekin sinkronizatuta dago.'
+            : mode === 'create'
+              ? 'Erabiltzailea sortu da eta saioa gailu honetan gordeta geratu da.'
+              : 'Saioa hasita: aurrerapena Supabase-rekin sinkronizatuta dago.'
         );
       }
     } catch (error) {
@@ -171,7 +181,11 @@ export default function Home() {
   }
 
   async function enter() {
-    await openProfile(username);
+    await openProfile(username, { mode: 'login' });
+  }
+
+  async function createUser() {
+    await openProfile(username, { mode: 'create' });
   }
 
   function leaveProfile() {
@@ -400,15 +414,15 @@ export default function Home() {
               Zure aurrerapena izenarekin gordeta.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-700 sm:text-xl">
-              Idatzi erabiltzaile-izena bakarrik. Pasahitzik gabe: izen horrekin zure akatsak,
-              kronologia eta errepikapenak Supabase-n sinkronizatuko dira.
+              Idatzi erabiltzaile-izena bakarrik. Lehen aldian sortu erabiltzailea; hurrengoetan
+              sartu egingo zara, eta gailu honek saioa gogoratuko du.
             </p>
           </div>
           <div className="glass-panel min-w-0 rounded-3xl p-5 sm:p-8">
             <label className="text-sm font-bold tracking-wide uppercase text-slate-500" htmlFor="username">
               Erabiltzaile-izena
             </label>
-            <div className="mt-2 grid gap-2 sm:flex">
+            <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
               <input
                 id="username"
                 className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white/80 px-4 py-3 font-bold outline-none ring-emerald-700/20 focus:ring-4"
@@ -427,12 +441,19 @@ export default function Home() {
               >
                 <User size={18} /> Sartu
               </button>
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-900/20 bg-white/80 px-5 py-3 font-black text-emerald-950 transition hover:bg-emerald-50 disabled:opacity-60"
+                onClick={() => void createUser()}
+                disabled={booting || loginBusy}
+              >
+                <Check size={18} /> Sortu
+              </button>
             </div>
             <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm leading-relaxed text-emerald-950">
               <p className="font-black">Nola funtzionatzen du?</p>
               <p className="mt-1">
-                Izen bera erabiltzen baduzu PC-an eta mugikorrean, progresu bera kargatuko da.
-                Ez erabili izen oso generikoak beste norbaitek ez nahasteko.
+                Lehen aldia bada, sakatu Sortu. Erabiltzailea badago, sakatu Sartu. Ondoren,
+                nabigatzaileak izena gordeko du eta hurrengo bisitan automatikoki irekiko da.
               </p>
             </div>
             {!isSupabaseConfigured() && (
