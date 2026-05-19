@@ -35,10 +35,12 @@ import {
   createOrderingExercise,
   createSeleAkatsExercise,
   createSeleOrderingExercise,
+  createThemedOrderingExercise,
   categoryLabel,
   examTexts,
   examOrderingEvents,
   getTrapCandidates,
+  orderingThemes,
   seleOrderingSets,
   scoreAkatsExercise,
   scoreOrdering,
@@ -66,6 +68,7 @@ import type { LocalAttempt, Profile } from '@/lib/progress';
 
 type Section = 'home' | 'testuak' | 'akatsak' | 'gertakariak' | 'ordenatu' | 'sele' | 'emaitzak';
 type ProfileOpenMode = 'auto' | 'login' | 'create';
+type OrderingPracticeMode = 'sele' | 'theme';
 type Selection = { id: string; label: string; trapId?: string };
 type StudyMark = TrapCandidate & { start: number; end: number; progressId: string; occurrence: number };
 type TutorState = { title: string; text: string } | null;
@@ -81,6 +84,8 @@ export default function Home() {
   const [akatsResult, setAkatsResult] = useState<AkatsResult | null>(null);
   const [ordering, setOrdering] = useState<OrderingExercise | null>(null);
   const [orderingResult, setOrderingResult] = useState<number | null>(null);
+  const [orderingPracticeMode, setOrderingPracticeMode] = useState<OrderingPracticeMode>('sele');
+  const [orderingTheme, setOrderingTheme] = useState('II. Errepublika');
   const [seleDone, setSeleDone] = useState(false);
   const [booting, setBooting] = useState(true);
   const [username, setUsername] = useState('');
@@ -94,6 +99,7 @@ export default function Home() {
 
   const examTextSources = useMemo(() => examTexts(), []);
   const examEventSources = useMemo(() => examOrderingEvents(), []);
+  const orderingThemeOptions = useMemo(() => orderingThemes(), []);
   const selectedText = texts.find((text) => text.id === selectedTextId) ?? examTextSources[0] ?? texts[0];
   const examCandidates = useMemo(() => examTextSources.flatMap((text) => getTrapCandidates(text)), [examTextSources]);
   const weakTraps = useMemo(() => weakTrapCandidates(progress, 6), [progress]);
@@ -259,8 +265,10 @@ export default function Home() {
     await saveAttempt({ profile, type: 'akatsak', score: result.total, maxScore: 2, detail: result });
   }
 
-  function newOrdering() {
-    const next = createOrderingExercise(progress);
+  function newOrdering(mode: OrderingPracticeMode = orderingPracticeMode, theme = orderingTheme) {
+    const next = mode === 'theme' ? createThemedOrderingExercise(progress, theme) : createOrderingExercise(progress);
+    setOrderingPracticeMode(mode);
+    setOrderingTheme(theme);
     setOrdering(next);
     setOrderingResult(null);
     setSeleDone(false);
@@ -543,7 +551,7 @@ export default function Home() {
         <NavButton active={section === 'gertakariak'} icon={<History size={18} />} onClick={() => setSection('gertakariak')}>
           Gertakariak ikasi
         </NavButton>
-        <NavButton active={section === 'ordenatu'} icon={<ArrowDownUp size={18} />} onClick={newOrdering}>
+        <NavButton active={section === 'ordenatu'} icon={<ArrowDownUp size={18} />} onClick={() => newOrdering('sele')}>
           Ordenatu praktikatu
         </NavButton>
         <NavButton active={section === 'emaitzak'} icon={<Trophy size={18} />} onClick={() => setSection('emaitzak')}>
@@ -560,7 +568,7 @@ export default function Home() {
             due={due}
             weakTraps={weakTraps}
             onAkats={newAkats}
-            onOrdering={newOrdering}
+            onOrdering={() => newOrdering('sele')}
             onSele={newSele}
             onStudy={() => {
               setSelectedTextId(weakTraps[0]?.textId ?? examTextSources[0]?.id ?? selectedTextId);
@@ -587,7 +595,7 @@ export default function Home() {
               title="Gertakariak ordenatu"
               text={`${examEventSources.length} gertakari ofizialeko bankutik 5 aterako dira. Puntuazioa PAU 25-26 bezala: 5/4/3/2 ondo = 1/0,75/0,5/0,25.`}
               cta="Kronologia ariketa hasi"
-              onClick={newOrdering}
+              onClick={() => newOrdering('sele')}
             />
             <button
               className="glass-panel glass-panel-hover group rounded-3xl p-6 text-left sm:p-8"
@@ -744,9 +752,45 @@ export default function Home() {
                 Gertaerak bakarrik agertzen dira, ez pertsonaia solteak.
               </p>
             </div>
-            <button className="rounded-xl border border-white/60 bg-white/60 px-5 py-3 font-bold shadow-sm backdrop-blur-md transition-all hover:bg-white hover:scale-105" onClick={newOrdering}>
+            <button
+              className="rounded-xl border border-white/60 bg-white/60 px-5 py-3 font-bold shadow-sm backdrop-blur-md transition-all hover:bg-white hover:scale-105"
+              onClick={() => newOrdering(orderingPracticeMode, orderingTheme)}
+            >
               Beste sorta bat
             </button>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
+            <div className="inline-grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm font-black text-slate-600">
+              <button
+                className={clsx('rounded-lg px-4 py-2 transition', orderingPracticeMode === 'sele' && 'bg-slate-950 text-white shadow-sm')}
+                onClick={() => newOrdering('sele')}
+              >
+                Sele modua
+              </button>
+              <button
+                className={clsx('rounded-lg px-4 py-2 transition', orderingPracticeMode === 'theme' && 'bg-slate-950 text-white shadow-sm')}
+                onClick={() => newOrdering('theme', orderingTheme)}
+              >
+                Gaika
+              </button>
+            </div>
+            <select
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm disabled:opacity-40"
+              value={orderingTheme}
+              onChange={(event) => newOrdering('theme', event.target.value)}
+              disabled={orderingPracticeMode !== 'theme'}
+            >
+              {orderingThemeOptions.map((theme) => (
+                <option key={theme} value={theme}>
+                  {theme}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm font-semibold text-slate-600">
+              {orderingPracticeMode === 'sele'
+                ? 'Lehenetsia: PAU estiloko nahasketa, mendeen arteko saltoekin eta gertakari garrantzitsuekin.'
+                : 'Gaika: gai zehatz bateko sekuentziak automatizatzeko.'}
+            </p>
           </div>
           <div className="mt-8 grid gap-4">
             {ordering.events.map((event, index) => (

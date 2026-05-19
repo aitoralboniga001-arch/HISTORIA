@@ -851,10 +851,20 @@ export function examOrderingSets() {
   return orderingSets.filter((set) => set.eventIds.every((id) => validEventIds.has(id)));
 }
 
+export function orderingThemes(): string[] {
+  return Array.from(new Set(examOrderingSets().map((set) => set.title))).sort((a, b) => a.localeCompare(b, 'eu'));
+}
+
 export function createOrderingExercise(progress: Record<string, ProgressItem> = {}): OrderingExercise {
-  const used = new Set<string>();
-  const sets = examOrderingSets();
-  const set = weightedPick(sets, progress, used) ?? sets[0];
+  return createSeleOrderingExercise(progress);
+}
+
+export function createThemedOrderingExercise(
+  progress: Record<string, ProgressItem> = {},
+  theme = 'II. Errepublika'
+): OrderingExercise {
+  const sets = examOrderingSets().filter((set) => set.title === theme);
+  const set = weightedPick(sets.length ? sets : examOrderingSets(), progress, new Set()) ?? examOrderingSets()[0];
   return buildOrderingExercise(set);
 }
 
