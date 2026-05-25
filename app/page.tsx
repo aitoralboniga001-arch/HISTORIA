@@ -96,6 +96,8 @@ export default function Home() {
   const [tutorBusy, setTutorBusy] = useState(false);
   const [now, setNow] = useState(0);
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const recentSeleAkatsIdsRef = useRef<string[]>([]);
+  const recentSeleOrderingIdsRef = useRef<string[]>([]);
 
   const examTextSources = useMemo(() => examTexts(), []);
   const examEventSources = useMemo(() => examOrderingEvents(), []);
@@ -162,8 +164,9 @@ export default function Home() {
       setProfile(nextProfile);
       setProgress(loaded);
       setNow(Date.now());
-      setAkats(createSeleAkatsExercise(loaded));
-      setOrdering(createSeleOrderingExercise(loaded));
+      const nextSele = createNextSele(loaded, false);
+      setAkats(nextSele.akats);
+      setOrdering(nextSele.ordering);
       setSelectedPieces([]);
       setAnswers({});
       setAkatsResult(null);
@@ -275,9 +278,24 @@ export default function Home() {
     setSection('ordenatu');
   }
 
+  function createNextSele(nextProgress: Record<string, ProgressItem>, avoidRecent: boolean) {
+    const excludeAkats = avoidRecent ? [...recentSeleAkatsIdsRef.current, akats?.id].filter((id): id is string => Boolean(id)) : [];
+    const excludeOrdering = avoidRecent ? [...recentSeleOrderingIdsRef.current, ordering?.id].filter((id): id is string => Boolean(id)) : [];
+    const nextAkats = createSeleAkatsExercise(nextProgress, { excludeIds: excludeAkats });
+    const nextOrdering = createSeleOrderingExercise(nextProgress, { excludeIds: excludeOrdering });
+    rememberRecentSele(nextAkats.id, nextOrdering.id);
+    return { akats: nextAkats, ordering: nextOrdering };
+  }
+
+  function rememberRecentSele(akatsId: string, orderingId: string) {
+    recentSeleAkatsIdsRef.current = [akatsId, ...recentSeleAkatsIdsRef.current.filter((id) => id !== akatsId)].slice(0, 6);
+    recentSeleOrderingIdsRef.current = [orderingId, ...recentSeleOrderingIdsRef.current.filter((id) => id !== orderingId)].slice(0, 8);
+  }
+
   function newSele() {
-    setAkats(createSeleAkatsExercise(progress));
-    setOrdering(createSeleOrderingExercise(progress));
+    const nextSele = createNextSele(progress, true);
+    setAkats(nextSele.akats);
+    setOrdering(nextSele.ordering);
     setSelectedPieces([]);
     setAnswers({});
     setAkatsResult(null);
@@ -395,8 +413,9 @@ export default function Home() {
       const raw = await file.text();
       const nextProgress = importProgressBackup(raw, progress);
       await persist(nextProgress);
-      setAkats(createSeleAkatsExercise(nextProgress));
-      setOrdering(createSeleOrderingExercise(nextProgress));
+      const nextSele = createNextSele(nextProgress, true);
+      setAkats(nextSele.akats);
+      setOrdering(nextSele.ordering);
       setSelectedPieces([]);
       setAnswers({});
       setAkatsResult(null);

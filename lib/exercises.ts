@@ -29,6 +29,9 @@ type SeleAkatsSet = {
   wrongs?: Record<string, string>;
   priority: number;
 };
+type ExercisePickOptions = {
+  excludeIds?: Iterable<string>;
+};
 
 export const seleOrderingSets: OrderingSet[] = [
   {
@@ -671,8 +674,12 @@ export function createAkatsExercise(progress: Record<string, ProgressItem> = {})
   return buildAkatsExercise(text, candidates, progress, `akats-${Date.now()}`);
 }
 
-export function createSeleAkatsExercise(progress: Record<string, ProgressItem> = {}): AkatsExercise {
+export function createSeleAkatsExercise(
+  progress: Record<string, ProgressItem> = {},
+  options: ExercisePickOptions = {}
+): AkatsExercise {
   const personal = createPersonalAkatsReview(progress);
+  const excluded = new Set(options.excludeIds ?? []);
   const pool = seleAkatsSets
     .map((set) => {
       const text = texts.find((item) => item.id === set.textId);
@@ -685,8 +692,8 @@ export function createSeleAkatsExercise(progress: Record<string, ProgressItem> =
         : null;
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const picked = deterministicDuePick(pool, progress, new Set()) ?? pool[0];
-  if (personal && shouldUsePersonalAkatsReview(personal, picked.id, progress)) return personal;
+  const picked = deterministicDuePick(pool, progress, excluded) ?? deterministicDuePick(pool, progress, new Set()) ?? pool[0];
+  if (personal && !excluded.has(personal.id) && shouldUsePersonalAkatsReview(personal, picked.id, progress)) return personal;
   return buildFixedAkatsExercise(picked.text, picked.candidates, picked.id);
 }
 
@@ -855,8 +862,11 @@ export function orderingThemes(): string[] {
   return Array.from(new Set(examOrderingSets().map((set) => set.title))).sort((a, b) => a.localeCompare(b, 'eu'));
 }
 
-export function createOrderingExercise(progress: Record<string, ProgressItem> = {}): OrderingExercise {
-  return createSeleOrderingExercise(progress);
+export function createOrderingExercise(
+  progress: Record<string, ProgressItem> = {},
+  options: ExercisePickOptions = {}
+): OrderingExercise {
+  return createSeleOrderingExercise(progress, options);
 }
 
 export function createThemedOrderingExercise(
@@ -868,10 +878,17 @@ export function createThemedOrderingExercise(
   return buildOrderingExercise(set);
 }
 
-export function createSeleOrderingExercise(progress: Record<string, ProgressItem> = {}): OrderingExercise {
+export function createSeleOrderingExercise(
+  progress: Record<string, ProgressItem> = {},
+  options: ExercisePickOptions = {}
+): OrderingExercise {
   const personal = createPersonalOrderingReview(progress);
-  const set = deterministicDuePick(seleOrderingSets, progress, new Set()) ?? seleOrderingSets[0];
-  if (personal && shouldUsePersonalOrderingReview(personal, set.id, progress)) return personal;
+  const excluded = new Set(options.excludeIds ?? []);
+  const set =
+    deterministicDuePick(seleOrderingSets, progress, excluded) ??
+    deterministicDuePick(seleOrderingSets, progress, new Set()) ??
+    seleOrderingSets[0];
+  if (personal && !excluded.has(personal.id) && shouldUsePersonalOrderingReview(personal, set.id, progress)) return personal;
   return buildOrderingExercise(set);
 }
 
