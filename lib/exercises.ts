@@ -692,9 +692,45 @@ export function createSeleAkatsExercise(
         : null;
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
-  const picked = deterministicDuePick(pool, progress, excluded) ?? deterministicDuePick(pool, progress, new Set()) ?? pool[0];
+  const picked = pickCoverageAwareAkatsSet(pool, progress, excluded) ?? pickCoverageAwareAkatsSet(pool, progress, new Set()) ?? pool[0];
   if (personal && !excluded.has(personal.id) && shouldUsePersonalAkatsReview(personal, picked.id, progress)) return personal;
   return buildFixedAkatsExercise(picked.text, picked.candidates, picked.id);
+}
+
+function pickCoverageAwareAkatsSet<T extends SeleAkatsSet & { text: TextSource; candidates: TrapCandidate[] }>(
+  pool: T[],
+  progress: Record<string, ProgressItem>,
+  excluded: Set<string>
+): T | null {
+  const available = pool.filter((set) => !excluded.has(set.id));
+  if (!available.length) return null;
+
+  const rescue = available
+    .filter((set) => {
+      const item = progress[set.id];
+      return item && isDue(item) && item.mastery <= 0.28;
+    })
+    .sort((a, b) => b.priority * progressWeight(b.id, progress) - a.priority * progressWeight(a.id, progress))[0];
+  if (rescue) return rescue;
+
+  const textAttempts = new Map<string, number>();
+  for (const set of pool) {
+    if (progress[set.id]) textAttempts.set(set.textId, (textAttempts.get(set.textId) ?? 0) + 1);
+  }
+
+  return [...available].sort((a, b) => {
+    const aAttempts = textAttempts.get(a.textId) ?? 0;
+    const bAttempts = textAttempts.get(b.textId) ?? 0;
+    const aSeen = Boolean(progress[a.id]);
+    const bSeen = Boolean(progress[b.id]);
+    return (
+      aAttempts - bAttempts ||
+      Number(aSeen) - Number(bSeen) ||
+      b.priority - a.priority ||
+      a.text.number - b.text.number ||
+      a.id.localeCompare(b.id)
+    );
+  })[0] ?? null;
 }
 
 function createPersonalAkatsReview(progress: Record<string, ProgressItem>): AkatsExercise | null {
@@ -885,11 +921,34 @@ export function createSeleOrderingExercise(
   const personal = createPersonalOrderingReview(progress);
   const excluded = new Set(options.excludeIds ?? []);
   const set =
-    deterministicDuePick(seleOrderingSets, progress, excluded) ??
-    deterministicDuePick(seleOrderingSets, progress, new Set()) ??
+    pickCoverageAwareOrderingSet(seleOrderingSets, progress, excluded) ??
+    pickCoverageAwareOrderingSet(seleOrderingSets, progress, new Set()) ??
     seleOrderingSets[0];
   if (personal && !excluded.has(personal.id) && shouldUsePersonalOrderingReview(personal, set.id, progress)) return personal;
   return buildOrderingExercise(set);
+}
+
+function pickCoverageAwareOrderingSet(
+  sets: OrderingSet[],
+  progress: Record<string, ProgressItem>,
+  excluded: Set<string>
+): OrderingSet | null {
+  const available = sets.filter((set) => !excluded.has(set.id));
+  if (!available.length) return null;
+
+  const rescue = available
+    .filter((set) => {
+      const item = progress[set.id];
+      return item && isDue(item) && item.mastery <= 0.28;
+    })
+    .sort((a, b) => b.priority * progressWeight(b.id, progress) - a.priority * progressWeight(a.id, progress))[0];
+  if (rescue) return rescue;
+
+  return [...available].sort((a, b) => {
+    const aSeen = Boolean(progress[a.id]);
+    const bSeen = Boolean(progress[b.id]);
+    return Number(aSeen) - Number(bSeen) || b.priority - a.priority || a.id.localeCompare(b.id);
+  })[0] ?? null;
 }
 
 function createPersonalOrderingReview(progress: Record<string, ProgressItem>): OrderingExercise | null {

@@ -101,6 +101,33 @@ describe('akatsak', () => {
     expect(seleAkatsSets.every((set) => set.corrects.length === 5)).toBe(true);
     expect(new Set(seleAkatsSets.map((set) => set.id)).size).toBe(seleAkatsSets.length);
   });
+
+  it('covers new correction texts before repeating mastered selectivity sets', () => {
+    const done = {
+      itemId: 'sele-akats-13-ofiziala-2025',
+      itemType: 'akats-set' as const,
+      mastery: 0.85,
+      streak: 2,
+      ease: 1.6,
+      dueAt: new Date(0).toISOString()
+    };
+    const exercise = createSeleAkatsExercise({ [done.itemId]: done });
+    expect(exercise.id).not.toBe(done.itemId);
+    expect(exercise.text.id).not.toBe('text-13');
+  });
+
+  it('rescues disastrous correction sets before continuing coverage', () => {
+    const failed = {
+      itemId: 'sele-akats-13-ofiziala-2025',
+      itemType: 'akats-set' as const,
+      mastery: 0.05,
+      streak: 0,
+      ease: 1,
+      dueAt: new Date(0).toISOString()
+    };
+    const exercise = createSeleAkatsExercise({ [failed.itemId]: failed });
+    expect(exercise.id).toBe(failed.itemId);
+  });
 });
 
 describe('ordenatu', () => {
@@ -136,6 +163,32 @@ describe('ordenatu', () => {
     expect(seleOrderingSets.every((set) => set.eventIds.length === 5)).toBe(true);
     expect(seleOrderingSets.every((set) => set.eventIds.every((id) => officialIds.has(id)))).toBe(true);
     expect(seleOrderingSets.every((set) => set.priority >= 8)).toBe(true);
+  });
+
+  it('covers new chronology sets before repeating mastered ones', () => {
+    const done = {
+      itemId: 'sele-set-051',
+      itemType: 'ordering-set' as const,
+      mastery: 0.9,
+      streak: 2,
+      ease: 1.6,
+      dueAt: new Date(0).toISOString()
+    };
+    const exercise = createSeleOrderingExercise({ [done.itemId]: done });
+    expect(exercise.id).not.toBe(done.itemId);
+  });
+
+  it('rescues disastrous chronology sets before continuing coverage', () => {
+    const failed = {
+      itemId: 'sele-set-051',
+      itemType: 'ordering-set' as const,
+      mastery: 0.05,
+      streak: 0,
+      ease: 1,
+      dueAt: new Date(0).toISOString()
+    };
+    const exercise = createSeleOrderingExercise({ [failed.itemId]: failed });
+    expect(exercise.id).toBe(failed.itemId);
   });
 });
 
