@@ -74,7 +74,7 @@ export const seleOrderingSets: OrderingSet[] = [
     id: 'sele-set-001',
     title: 'Sele kronologia orokorra I',
     eventIds: ['event-008', 'event-023', 'event-044', 'event-093', 'event-100'],
-    priority: 10
+    priority: 14
   },
   {
     id: 'sele-set-002',
@@ -104,7 +104,7 @@ export const seleOrderingSets: OrderingSet[] = [
     id: 'sele-set-006',
     title: 'Estatu liberala eta Berrezarkuntza',
     eventIds: ['event-002', 'event-008', 'event-023', 'event-027', 'event-029'],
-    priority: 9
+    priority: 10
   },
   {
     id: 'sele-set-007',
@@ -405,161 +405,168 @@ export const seleAkatsSets: SeleAkatsSet[] = [
     id: 'sele-akats-13-a',
     textId: 'text-13',
     title: 'Clara Campoamor: kontzeptu politikoak',
-    corrects: ['askatasunaren', 'Errepublika', 'lehen', 'Espainia', 'sufragio'],
-    priority: 10
+    corrects: ['askatasunaren', 'Errepublika', 'monarkiaren', 'lehen', 'Espainia'],
+    priority: 14
   },
   {
     id: 'sele-akats-13-b',
     textId: 'text-13',
     title: 'Clara Campoamor: subjektua eta erakundeak',
     corrects: ['askatasuna', 'Espainiako', 'emakumearen', 'emakumeari', 'ganbera'],
-    priority: 9
+    priority: 11
   },
   {
     id: 'sele-akats-14-a',
     textId: 'text-14',
     title: 'Fronte Popularra: amnistia eta ekonomia',
-    corrects: ['Errepublika', 'amnistia', 'delitu politiko eta sozialen', 'lurra nazionalizatu', 'bankuak nazionalizatzeko'],
-    priority: 10
+    corrects: ['Errepublika', 'amnistia', 'nazionalizatu', 'langileen', 'Fronte Popularra'],
+    priority: 14
   },
   {
     id: 'sele-akats-14-b',
     textId: 'text-14',
     title: 'Fronte Popularra: langileak eta Estatua',
-    corrects: ['langileen', 'Estatu errepublikanoaren', 'nazionalizatu', 'langile-kontrola', 'Fronte Popularra'],
-    priority: 9
+    corrects: ['delitu politiko eta sozialen', 'Estatu errepublikanoaren', 'lurra nazionalizatu', 'bankuak nazionalizatzeko', 'langile-kontrola'],
+    priority: 10
   },
   {
     id: 'sele-akats-15-a',
     textId: 'text-15',
     title: '1936ko Estatutua: lurraldea eta hizkuntza',
-    corrects: ['Erkalaren (Errepublikaren)', 'Araba, Gipuzkoa eta Bizkaya', 'Euzkera', "Euzkadi'ko laterri-izkera (hizkuntza ofiziala)", "Bizkaya'ko Jaurlaria"],
-    priority: 10
+    corrects: ['Erkalaren (Errepublikaren)', 'Euzkera', "Bizkaya'ko Jaurlaria", 'Lendakariaren', 'Bitarteko (Behin-behineko) Jaurlaritza'],
+    priority: 14
   },
   {
     id: 'sele-akats-15-b',
     textId: 'text-15',
     title: '1936ko Estatutua: demokrazia eta erakundeak',
-    corrects: ['España laterriaren (estatuaren)', "Bizkaya'ko Jaurlaria", 'auteskunde orokar (orokor), zuzen eta ixilen', 'Bitarteko (Behin-behineko) Jaurlaritza', 'Lendakariaren'],
-    priority: 9
+    corrects: ['Araba, Gipuzkoa eta Bizkaya', "Euzkadi'ko laterri-izkera (hizkuntza ofiziala)", 'España laterriaren (estatuaren)', 'auteskunde orokar (orokor), zuzen eta ixilen', 'Lendakariaren'],
+    priority: 10
   },
   {
     id: 'sele-akats-16-a',
     textId: 'text-16',
     title: 'Kontzertu ekonomikoak: probintziak',
-    corrects: ['Gipuzkoan eta Bizkaian', 'Arabako', 'Gipuzkoa eta Bizkaia', 'uztailaren', 'Francisco Franco'],
-    priority: 10
+    corrects: ['txikiagoagatik', 'Gipuzkoan eta Bizkaian', 'uztailaren', 'Arabako', 'Francisco Franco'],
+    priority: 14
   },
   {
     id: 'sele-akats-16-b',
     textId: 'text-16',
     title: 'Kontzertu ekonomikoak: frankismoa',
     corrects: ['txikiagoagatik', 'Mugimendu Nazionalaren', 'autonomia', 'Nafarroa', 'Franco'],
-    priority: 9
+    priority: 11
   },
   {
     id: 'sele-akats-17-a',
     textId: 'text-17',
     title: 'Erantzukizun Politikoa: errepresioa',
     corrects: ['Mugimendu Nazionalaren', 'Falange Española Tradicionalista y de las JONSen', 'Fronte Popularra', 'erakunde separatistak', 'Gobernuak'],
-    priority: 10
+    priority: 14
   },
   {
     id: 'sele-akats-17-b',
     textId: 'text-17',
     title: 'Erantzukizun Politikoa: botere frankista',
     corrects: ['uztailaren', 'Gobernuak', 'Mugimendu Nazionalaren', 'Fronte Popularra', 'Falange Española Tradicionalista y de las JONSen'],
-    priority: 9
+    priority: 11
   },
   {
     id: 'sele-akats-18-a',
     textId: 'text-18',
     title: 'Autarkia: industria-politika',
+    corrects: ['Espainia', 'babesteko', 'inportaziotik', 'nazio-intereseko', 'Estatuak'],
+    priority: 14
+  },
+  {
+    id: 'sele-akats-18-b',
+    textId: 'text-18',
+    title: 'Autarkia: estatua eta ekimena',
     corrects: ['Espainia', 'inportaziotik', 'nazio-intereseko', 'ekimen partikularra', 'Estatuak'],
-    priority: 9
+    priority: 10
   },
   {
     id: 'sele-akats-19-a',
     textId: 'text-19',
     title: 'Munich: demokrazia eta eskubideak',
     corrects: ['Espainia', 'demokratikoak', 'Gizakiaren Eskubideei', 'adierazpen-askatasunari', 'alderdi politikoak'],
-    priority: 10
+    priority: 14
   },
   {
     id: 'sele-akats-19-b',
     textId: 'text-19',
     title: 'Munich: pluralismoa',
-    corrects: ['espainiar', 'Espainiaren', 'greba', 'bortxakeria aktibo nahiz pasiboari', 'Errepublika'],
-    priority: 9
+    corrects: ['espainiar', 'Espainiaren', 'greba', 'alderdi politikoak', 'bortxakeria aktibo nahiz pasiboari'],
+    priority: 10
   },
   {
     id: 'sele-akats-20-a',
     textId: 'text-20',
     title: 'Lege Organikoa: printzipio frankistak',
     corrects: ['Espainiar estatua', 'subiranotasuna', 'botere-batasunaren', 'Mugimendu Nazionalaren', 'Estatuburua'],
-    priority: 10
+    priority: 14
   },
   {
     id: 'sele-akats-20-b',
     textId: 'text-20',
     title: 'Lege Organikoa: karguak',
     corrects: ['Espainiako', 'Espainiar', 'Gobernuburuak', 'Estatuburua', 'botere-batasunaren'],
-    priority: 9
+    priority: 10
   },
   {
     id: 'sele-akats-21-a',
     textId: 'text-21',
     title: 'Baionako Hitzarmena: erbestea',
     corrects: ['Euzkadiko Gobernua', 'Jose Antonio Agirre', 'Francoren gobernuaren', 'diktadura', 'demokratikoa'],
-    priority: 10
+    priority: 14
   },
   {
     id: 'sele-akats-21-b',
     textId: 'text-21',
     title: 'Baionako Hitzarmena: erregimen politikoa',
     corrects: ['monarkia', 'Errepublikako', 'Gorteek', 'Gobernuak', 'monarkia berrezartzearen'],
-    priority: 9
+    priority: 10
   },
   {
     id: 'sele-akats-22-a',
     textId: 'text-22',
     title: 'Añoveros: euskal gatazka',
     corrects: ['Bizkaiko', 'euskal gatazka', 'zapalduta', 'Euskararen erabilera', 'irakaskuntzan eta komunikabideetan'],
-    priority: 10
+    priority: 14
   },
   {
     id: 'sele-akats-22-b',
     textId: 'text-22',
     title: 'Añoveros: askatasuna eta Eliza',
     corrects: ['askatasuna', 'Espainiako', 'Elizak', 'Euskararen erabilera', 'euskal gatazka'],
-    priority: 9
+    priority: 10
   },
   {
     id: 'sele-akats-23-a',
     textId: 'text-23',
     title: '1978ko Konstituzioa: forma politikoa',
-    corrects: ['zuzenbide-estatu sozial eta demokratiko', 'monarkia parlamentarioa', 'pluralismo politikoa', 'Espainiako herriari', 'nazionalitate eta eskualdeen'],
-    priority: 10
+    corrects: ['askatasuna', 'monarkia parlamentarioa', 'pluralismo politikoa', 'Espainiako herriari', 'nazionalitate eta eskualdeen'],
+    priority: 14
   },
   {
     id: 'sele-akats-23-b',
     textId: 'text-23',
     title: '1978ko Konstituzioa: foruak eta autonomia',
-    corrects: ['askatasuna', 'autonomia', 'eskubide historikoak', 'foru-lurraldeen', 'Bizkaiko'],
+    corrects: ['zuzenbide-estatu sozial eta demokratiko', 'autonomia', 'eskubide historikoak', 'foru-lurraldeen', 'Bizkaiko'],
     priority: 10
   },
   {
     id: 'sele-akats-24-a',
     textId: 'text-24',
     title: 'Gernikako Estatutua: lurraldea',
-    corrects: ['Euskadi edo Euskal Herria', 'Nafarroak ere', 'Gipuzkoa eta Bizkaia', 'Lurralde Historikoek', 'Autonomia'],
-    priority: 10
+    corrects: ['Euskadi edo Euskal Herria', 'Nafarroak ere', 'Gipuzkoa eta Bizkaia', 'Autonomia', 'Euskara'],
+    priority: 14
   },
   {
     id: 'sele-akats-24-b',
     textId: 'text-24',
     title: 'Gernikako Estatutua: hizkuntza eta polizia',
-    corrects: ['Euskara', 'hizkuntza ofiziala', 'Polizia autonomoaren', 'Estatuko Segurtasun Indar eta Gorputzak', 'autonomia'],
+    corrects: ['Lurralde Historikoek', 'hizkuntza ofiziala', 'Polizia autonomoaren', 'Estatuko Segurtasun Indar eta Gorputzak', 'autonomia'],
     priority: 10
   }
 ];
@@ -679,6 +686,19 @@ export function createAkatsExerciseForText(
   progress: Record<string, ProgressItem> = {}
 ): AkatsExercise {
   const text = eligibleTexts().find((item) => item.id === textId) ?? eligibleTexts()[0] ?? texts[0];
+  const curated = seleAkatsSets
+    .filter((set) => set.textId === text.id)
+    .map((set) => {
+      const candidates = set.corrects
+        .map((correct) => fixedSeleCandidate(text, set, correct))
+        .filter((candidate): candidate is TrapCandidate => Boolean(candidate));
+      return candidates.length === 5 && countPositionableFromCandidates(text, candidates) >= 5
+        ? { ...set, text, candidates }
+        : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const picked = pickCoverageAwareAkatsSet(curated, progress, new Set());
+  if (picked) return buildFixedAkatsExercise(picked.text, picked.candidates, picked.id);
   const candidates = getTrapCandidates(text).sort((a, b) => b.priority - a.priority);
   return buildAkatsExercise(text, candidates, progress, `akats-${text.id}-${Date.now()}`);
 }

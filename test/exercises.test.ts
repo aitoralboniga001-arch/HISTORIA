@@ -104,7 +104,7 @@ describe('akatsak', () => {
   });
 
   it('has manually curated selectivity akats sets', () => {
-    expect(seleAkatsSets).toHaveLength(25);
+    expect(seleAkatsSets).toHaveLength(26);
     expect(seleAkatsSets.every((set) => set.corrects.length === 5)).toBe(true);
     expect(new Set(seleAkatsSets.map((set) => set.id)).size).toBe(seleAkatsSets.length);
   });
