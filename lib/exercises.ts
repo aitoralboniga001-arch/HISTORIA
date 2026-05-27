@@ -674,6 +674,15 @@ export function createAkatsExercise(progress: Record<string, ProgressItem> = {})
   return buildAkatsExercise(text, candidates, progress, `akats-${Date.now()}`);
 }
 
+export function createAkatsExerciseForText(
+  textId: string,
+  progress: Record<string, ProgressItem> = {}
+): AkatsExercise {
+  const text = eligibleTexts().find((item) => item.id === textId) ?? eligibleTexts()[0] ?? texts[0];
+  const candidates = getTrapCandidates(text).sort((a, b) => b.priority - a.priority);
+  return buildAkatsExercise(text, candidates, progress, `akats-${text.id}-${Date.now()}`);
+}
+
 export function createSeleAkatsExercise(
   progress: Record<string, ProgressItem> = {},
   options: ExercisePickOptions = {}

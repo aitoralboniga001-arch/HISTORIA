@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { events, texts } from '../lib/content';
 import {
   createAkatsExercise,
+  createAkatsExerciseForText,
   createSeleAkatsExercise,
   createSeleOrderingExercise,
   eligibleTexts,
@@ -36,6 +37,12 @@ describe('akatsak', () => {
       expect(exercise.mutatedBody.slice(trap.start, trap.end)).toBe(trap.wrong);
       expect(trap.correct).not.toMatch(/\b(VII|XII|XIII|XIV|I\.a|II\.a)\b/);
     }
+  });
+
+  it('can create correction practice for a chosen official text', () => {
+    const exercise = createAkatsExerciseForText('text-16');
+    expect(exercise.text.id).toBe('text-16');
+    expect(exercise.traps).toHaveLength(5);
   });
 
   it('scores identification and correction separately', () => {

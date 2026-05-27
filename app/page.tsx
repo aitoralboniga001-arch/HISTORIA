@@ -32,6 +32,7 @@ import { events, texts } from '@/lib/content';
 import {
   compareEvents,
   createAkatsExercise,
+  createAkatsExerciseForText,
   createOrderingExercise,
   createSeleAkatsExercise,
   createSeleOrderingExercise,
@@ -78,6 +79,7 @@ export default function Home() {
   const [progress, setProgress] = useState<Record<string, ProgressItem>>({});
   const [section, setSection] = useState<Section>('home');
   const [selectedTextId, setSelectedTextId] = useState(examTexts()[0]?.id ?? texts[0]?.id ?? '');
+  const [practiceTextId, setPracticeTextId] = useState('auto');
   const [akats, setAkats] = useState<AkatsExercise | null>(null);
   const [selectedPieces, setSelectedPieces] = useState<Selection[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -239,8 +241,10 @@ export default function Home() {
     });
   }
 
-  function newAkats() {
-    setAkats(createAkatsExercise(progress));
+  function newAkats(textId = practiceTextId) {
+    const nextAkats = textId === 'auto' ? createAkatsExercise(progress) : createAkatsExerciseForText(textId, progress);
+    setAkats(nextAkats);
+    setPracticeTextId(textId);
     setSelectedPieces([]);
     setAnswers({});
     setAkatsResult(null);
@@ -564,7 +568,7 @@ export default function Home() {
         <NavButton active={section === 'testuak'} icon={<BookOpen size={18} />} onClick={() => setSection('testuak')}>
           Testuak ikasi
         </NavButton>
-        <NavButton active={section === 'akatsak'} icon={<ListChecks size={18} />} onClick={newAkats}>
+        <NavButton active={section === 'akatsak'} icon={<ListChecks size={18} />} onClick={() => newAkats()}>
           Akatsak praktikatu
         </NavButton>
         <NavButton active={section === 'gertakariak'} icon={<History size={18} />} onClick={() => setSection('gertakariak')}>
@@ -586,7 +590,7 @@ export default function Home() {
             xp={xp}
             due={due}
             weakTraps={weakTraps}
-            onAkats={newAkats}
+            onAkats={() => newAkats()}
             onOrdering={() => newOrdering('sele')}
             onSele={newSele}
             onStudy={() => {
@@ -607,7 +611,7 @@ export default function Home() {
               title="Akatsak praktikatu"
               text="Testu ofizial batean 5 akats aurkitu. Hitz guztiak dira klikagarriak, azterketan bezala: aplikazioak ez dizu pista bisualik ematen."
               cta="Akatsen ariketa hasi"
-              onClick={newAkats}
+              onClick={() => newAkats()}
             />
             <HomeCard
               icon={<ArrowDownUp size={24} />}
@@ -688,10 +692,26 @@ export default function Home() {
           <aside className="glass-panel rounded-3xl p-6 flex flex-col">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-2xl font-black text-slate-900">Zure zuzenketak</h2>
-              <button className="rounded-xl border border-white/60 bg-white/50 p-2.5 shadow-sm transition-all hover:bg-white hover:scale-105" onClick={newAkats} title="Berria">
+              <button className="rounded-xl border border-white/60 bg-white/50 p-2.5 shadow-sm transition-all hover:bg-white hover:scale-105" onClick={() => newAkats()} title="Berria">
                 <RotateCcw size={18} className="text-slate-700" />
               </button>
             </div>
+            <label className="mt-4 block text-xs font-black uppercase tracking-widest text-slate-500" htmlFor="practice-text">
+              Testua aukeratu
+            </label>
+            <select
+              id="practice-text"
+              className="mt-2 w-full rounded-xl border border-white/60 bg-white/70 px-4 py-3 text-sm font-black text-slate-800 shadow-sm outline-none transition focus:ring-4 focus:ring-teal-500/20"
+              value={practiceTextId}
+              onChange={(event) => newAkats(event.target.value)}
+            >
+              <option value="auto">Automatikoa: sistemak aukeratu</option>
+              {examTextSources.map((text) => (
+                <option key={text.id} value={text.id}>
+                  {text.number}. {text.title}
+                </option>
+              ))}
+            </select>
             <p className="mt-3 text-sm leading-relaxed text-slate-600">
               Egin klik susmagarriak diren hitzetan. Denak dira klikagarriak, beraz hemen ez dago pistarik.
               <strong className="block mt-1 text-teal-700">Hautatuta: {selectedPieces.length}/5</strong>
